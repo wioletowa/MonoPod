@@ -136,8 +136,6 @@ fun LcdScreen(
     /** Glass around the screen and an optional ring around that, from the body theme. */
     bezel: Color = Color(0xFF1B1B1E),
     frame: Color? = null,
-    /** Space at the bottom hidden behind a floating wheel (full screen layout). */
-    bottomInset: Dp = 0.dp,
     /** Status bar icons, shown only while the mode is on. */
     shuffle: Boolean = false,
     /** A media3 Player.REPEAT_MODE_* value. */
@@ -168,7 +166,7 @@ fun LcdScreen(
                 .screenEffect(effect, effectIntensity, crtSpeed)
                 .background(Lcd.background),
         ) {
-            Column(Modifier.fillMaxSize().padding(bottom = bottomInset)) {
+            Column(Modifier.fillMaxSize()) {
                 StatusBar(title, playing, shuffle, repeatMode, rememberBattery())
                 Box(Modifier.fillMaxWidth().weight(1f), content = content)
             }

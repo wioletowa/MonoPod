@@ -114,7 +114,7 @@ monopod-theme {
        Стиль ipod — акцентный цвет (cover = из обложки); material — cover (из обложки) | system (из обоев) */
     colors: blue;
 
-    /* Layout / Раскладка: classic | big | full */
+    /* Layout / Раскладка: classic | big */
     layout: classic;
 
     /* Screen effect / Эффект экрана: off | lcd | crt | mono */

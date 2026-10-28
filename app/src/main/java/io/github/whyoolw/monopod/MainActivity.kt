@@ -60,6 +60,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
@@ -116,7 +117,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.whyoolw.monopod.ui.screen.family
 import androidx.compose.foundation.layout.height
@@ -317,7 +317,7 @@ fun MonopodApp(app: AppState, library: LibraryRepository) {
             contentAlignment = Alignment.TopCenter,
         ) {
             val current = menu.current
-            val screen: @Composable (Modifier, Dp) -> Unit = { mod, inset ->
+            val screen: @Composable (Modifier) -> Unit = { mod ->
                 LcdScreen(
                     title = current.page.title,
                     playing = when {
@@ -336,7 +336,6 @@ fun MonopodApp(app: AppState, library: LibraryRepository) {
                     bezel = theme.bezel,
                     frame = theme.screenFrame,
                     modifier = mod.onGloballyPositioned { screenRect = it.boundsInRoot() },
-                    bottomInset = inset,
                 ) {
                     AnimatedContent(
                         targetState = current,
@@ -397,28 +396,20 @@ fun MonopodApp(app: AppState, library: LibraryRepository) {
                     Spacer(Modifier.width(14.dp))
                     clickWheel(Modifier.width(wheelSize))
                 }
-            } else when (app.layout) {
-                ScreenLayout.Classic, ScreenLayout.BigScreen -> {
-                    val big = app.layout == ScreenLayout.BigScreen
-                    // Classic keeps the iPod's 4:3 screen; big screen goes square and shrinks the wheel
-                    val screenWidth = maxWidth * if (big) 0.92f else 0.88f
-                    val screenHeight = if (big) minOf(screenWidth, maxHeight * 0.58f) else screenWidth * 0.75f
-                    val wheelSize = minOf(maxWidth * if (big) 0.64f else 0.80f, maxHeight - screenHeight - 56.dp)
-                    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Spacer(Modifier.weight(if (big) 0.4f else 0.6f))
-                        screen(Modifier.width(screenWidth).height(screenHeight), 0.dp)
-                        Spacer(Modifier.weight(1f))
-                        clickWheel(Modifier.width(wheelSize))
-                        Spacer(Modifier.weight(1f))
-                    }
-                }
-                ScreenLayout.FullScreen -> {
-                    // The screen fills the phone; the wheel floats over its bottom, which lists keep clear of
-                    val wheelSize = minOf(maxWidth * 0.62f, maxHeight * 0.32f)
-                    Box(Modifier.fillMaxSize().padding(10.dp)) {
-                        screen(Modifier.fillMaxSize(), wheelSize + 24.dp)
-                        clickWheel(Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp).width(wheelSize))
-                    }
+            } else {
+                // Classic keeps the iPod's 4:3 screen. Big screen keeps the wheel just where Classic has it
+                // and grows the screen up and to the sides, up to about as tall as it is wide.
+                val classicHeight = maxWidth * 0.88f * 0.75f
+                val wheelSize = minOf(maxWidth * 0.80f, maxHeight - classicHeight - 56.dp)
+                val free = maxHeight - classicHeight - wheelSize
+                val wheelTop = free * (0.6f / 2.6f) + classicHeight + free * (1f / 2.6f)
+                val big = app.layout == ScreenLayout.BigScreen
+                val screenWidth = maxWidth * if (big) 0.96f else 0.88f
+                val screenHeight = if (big) minOf(maxWidth * 0.97f, wheelTop - 30.dp - 12.dp) else classicHeight
+                val screenTop = if (big) wheelTop - 30.dp - screenHeight else free * (0.6f / 2.6f)
+                Box(Modifier.fillMaxSize()) {
+                    screen(Modifier.align(Alignment.TopCenter).offset(y = screenTop).width(screenWidth).height(screenHeight))
+                    clickWheel(Modifier.align(Alignment.TopCenter).offset(y = wheelTop).width(wheelSize))
                 }
             }
         }

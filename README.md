@@ -26,8 +26,8 @@ An iPod Classic–style music player for Android, driven entirely by the click w
 
 **Looks**
 - iPod or Material style; Material takes its colors from the album cover or the wallpaper.
-- Bodies, accent colors like macOS, screen effects (color LCD, CRT, monochrome), three layouts, three fonts, dark screen.
-- **Custom bodies from theme files**: a CSS-like file (or a `.zip` with body and main-menu pictures). Settings → Appearance → Body → Download Template / + Add. The template, with every field explained in English and Russian, is [`app/src/main/assets/monopod-theme-template.css`](app/src/main/assets/monopod-theme-template.css).
+- Bodies, accent colors like macOS, screen effects (color LCD, CRT, monochrome), two layouts (Classic and Big Screen), three fonts, dark screen.
+- **Custom bodies from theme files**: a CSS-like file (or a `.zip` with body and main-menu pictures). Settings → Appearance → Body → Download Template / + Add. The template, with every field explained in English and Russian, is [`app/src/main/assets/monopod-theme-template.css`](app/src/main/assets/monopod-theme-template.css). Or build one visually in the theme editor, [`web/theme-editor/index.html`](web/theme-editor/index.html): open it in a browser, pick colors and pictures with a live preview, and download the `.css` or `.zip`.
 - Stickers on the body, and six look presets (Appearance → Presets) that remember settings and stickers.
 
 ## Install

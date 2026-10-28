@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monopod Theme Editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tiny5&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f4f6; --panel: #ffffff; --ink: #18181c; --dim: #6c6d73; --line: #e2e2e7;
+  --accent: #1c6ccf; --accent-ink: #fff; --field: #f7f7f9;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111113; --panel: #1b1b1f; --ink: #ececf0; --dim: #9a9ba3; --line: #2c2c33;
+    --accent: #4ba3ff; --accent-ink: #0b0b0d; --field: #232329;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 5; flex-wrap: wrap; }
+header h1 { font-size: 17px; margin: 0; font-weight: 650; }
+header .sp { flex: 1; }
+button, .btn { font: inherit; border: 1px solid var(--line); background: var(--field); color: var(--ink); border-radius: 9px; padding: 7px 12px; cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+button:hover { filter: brightness(1.05); }
+main { display: grid; grid-template-columns: minmax(300px, 440px) 1fr; gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto; }
+@media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 16px; } .preview-wrap { position: static !important; } }
+.preview-wrap { position: sticky; top: 76px; align-self: start; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.hint { color: var(--dim); font-size: 12.5px; text-align: center; max-width: 360px; }
+section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+section h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); margin: 0 0 10px; font-weight: 650; }
+.row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; padding: 5px 0; border-top: 1px solid var(--line); }
+.row:first-of-type { border-top: 0; }
+.row label { display: flex; flex-direction: column; }
+.row small { color: var(--dim); font-size: 12px; }
+.row .ctl { display: flex; align-items: center; gap: 8px; }
+input[type=text] { font: inherit; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); width: 220px; max-width: 100%; }
+select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); }
+input[type=color] { width: 40px; height: 30px; padding: 0; border: 1px solid var(--line); border-radius: 7px; background: none; cursor: pointer; }
+input[type=color]:disabled { opacity: .3; cursor: default; }
+input[type=range] { width: 150px; }
+.chk { display: flex; align-items: center; gap: 4px; color: var(--dim); font-size: 12.5px; }
+.pic { display: flex; align-items: center; gap: 8px; }
+.pic .thumb { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--line); background: var(--field) center/cover no-repeat; }
+.err { color: #d33; font-size: 13px; min-height: 1em; }
+textarea { width: 100%; height: 220px; font: 12px/1.45 ui-monospace, Menlo, Consolas, monospace; border-radius: 10px; border: 1px solid var(--line); background: var(--field); color: var(--ink); padding: 10px; }
+
+/* ── The phone ───────────────────────────────────────────────────────── */
+.phone { width: 300px; height: 640px; border-radius: 38px; padding: 9px; background: #0c0c0e; box-shadow: 0 18px 50px rgba(0,0,0,.28); }
+.body { position: relative; width: 100%; height: 100%; border-radius: 30px; overflow: hidden; }
+.body .layer { position: absolute; inset: 0; }
+.status { position: absolute; left: 0; right: 0; top: 0; height: 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font: 600 11px system-ui, sans-serif; z-index: 3; }
+.screen { position: absolute; left: 16px; right: 16px; top: 42px; border-radius: 10px; z-index: 2; }
+.screen .glass { position: absolute; inset: 0; border-radius: 10px; padding: 5px; }
+.lcd { position: absolute; inset: 5px; border-radius: 5px; overflow: hidden; }
+.lcd .bar { height: 19px; display: flex; align-items: center; justify-content: center; position: relative; font-weight: 700; font-size: 11.5px; border-bottom: 1px solid; }
+.lcd .bar .play { position: absolute; left: 7px; font-size: 9px; }
+.lcd .bar .batt { position: absolute; right: 7px; width: 18px; height: 8px; border: 1.3px solid; border-radius: 2px; }
+.lcd .bar .batt::after { content: ""; position: absolute; inset: 1.5px; right: 5px; background: linear-gradient(#b4f07a, #4daa1c); }
+.lcd .list { position: absolute; top: 19px; left: 0; right: 0; bottom: 0; }
+.lcd .item { height: 26px; display: flex; align-items: center; padding: 0 9px; font-weight: 600; font-size: 14px; position: relative; z-index: 1; }
+.lcd .item .chev { margin-left: auto; opacity: .55; font-weight: 700; }
+.lcd .item .ic { width: 15px; height: 15px; border-radius: 50%; margin-right: 6px; }
+.lcd .menupic { position: absolute; inset: 0; background: center/cover no-repeat; }
+.lcd .veil { position: absolute; inset: 0; }
+.lcd .fx { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.wheel { position: absolute; left: 50%; transform: translateX(-50%); border-radius: 50%; z-index: 2; }
+.wheel .lbl { position: absolute; font: 700 12px system-ui, sans-serif; letter-spacing: .02em; }
+.wheel .center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 38%; height: 38%; border-radius: 50%; }
+.material .screen, .material .screen .glass { border-radius: 18px; }
+.material .lcd { border-radius: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 data-t="title">Monopod — редактор темы корпуса</h1>
+  <span class="sp"></span>
+  <button id="lang">EN</button>
+  <label class="btn" for="importCss" data-t="import">Открыть .css</label>
+  <input type="file" id="importCss" accept=".css,text/css,text/plain" hidden>
+  <button class="primary" id="download" data-t="download">Скачать тему</button>
+</header>
+
+<main>
+  <div class="preview-wrap">
+    <div class="phone"><div class="body" id="body">
+      <div class="layer" id="bodyGrad"></div>
+      <div class="layer" id="bodyPic"></div>
+      <div class="layer" id="bodyFinish"></div>
+      <div class="layer" id="bodyRim"></div>
+      <div class="status" id="status"><span>9:41</span><span>▲ ▮▮ ▮</span></div>
+      <div class="screen" id="screen">
+        <div class="glass" id="glass">
+          <div class="lcd" id="lcd">
+            <div class="bar" id="bar"><span class="play">❚❚</span><span>Monopod</span><span class="batt"></span></div>
+            <div class="list" id="list">
+              <div class="menupic" id="menuPic"></div>
+              <div class="veil" id="veil"></div>
+            </div>
+            <div class="fx" id="fx"></div>
+          </div>
+        </div>
+      </div>
+      <div class="wheel" id="wheel">
+        <span class="lbl" id="lMenu">MENU</span>
+        <span class="lbl" id="lPrev">⏮</span>
+        <span class="lbl" id="lNext">⏭</span>
+        <span class="lbl" id="lPlay">⏯</span>
+        <div class="center" id="center"></div>
+      </div>
+    </div></div>
+    <div class="hint" data-t="hint">Примерный вид: в приложении корпус, колесо и экран рисуются так же, но шрифт и эффекты могут немного отличаться.</div>
+  </div>
+
+  <div>
+    <section>
+      <h2 data-t="sName">Название</h2>
+      <div class="row"><label><span data-t="name">Название в списке корпусов</span></label>
+        <div class="ctl"><input type="text" id="name" maxlength="40"></div></div>
+      <div class="err" id="err"></div>
+    </section>
+
+    <section>
+      <h2 data-t="sBody">Корпус</h2>
+      <div id="bodyRows"></div>
+    </section>
+
+    <section>
+      <h2 data-t="sPics">Картинки</h2>
+      <div class="row"><label><span data-t="bodyImage">Картинка на весь корпус</span><small data-t="bodyImageHint">Вместо цвета корпуса, обрезается по размеру телефона. Лучше вертикальная, 1080×2400.</small></label>
+        <div class="ctl pic"><div class="thumb" id="bodyThumb"></div>
+          <label class="btn" for="bodyFile" data-t="pick">Выбрать</label><input type="file" id="bodyFile" accept="image/png,image/jpeg,image/webp" hidden>
+          <button id="bodyClear">✕</button></div></div>
+      <div class="row"><label><span data-t="menuImage">Фон главного меню</span><small data-t="menuImageHint">Только первый экран, обрезается по размеру экрана.</small></label>
+        <div class="ctl pic"><div class="thumb" id="menuThumb"></div>
+          <label class="btn" for="menuFile" data-t="pick">Выбрать</label><input type="file" id="menuFile" accept="image/png,image/jpeg,image/webp" hidden>
+          <button id="menuClear">✕</button></div></div>
+      <div class="row"><label><span data-t="veil">Вуаль над фоном меню</span><small data-t="veilHint">Цвет экрана поверх картинки, чтобы текст читался.</small></label>
+        <div class="ctl"><input type="range" id="veilR" min="0" max="100" value="35"><span id="veilV">35%</span></div></div>
+    </section>
+
+    <section>
+      <h2 data-t="sSettings">Настройки при выборе корпуса</h2>
+      <div id="setRows"></div>
+    </section>
+
+    <section>
+      <h2 data-t="sFile">Файл темы</h2>
+      <textarea id="out" readonly></textarea>
+      <div class="hint" style="text-align:left;max-width:none" data-t="fileHint">Без картинок скачается .css, с картинками — .zip (css + картинки). В Monopod: Настройки → Внешний вид → Корпус → «+ Добавить».</div>
+    </section>
+  </div>
+</main>
+
+<script>
+"use strict";
+// ── Texts ─────────────────────────────────────────────────────────────────────
+const T = {
+  ru: {
+    title: "Monopod — редактор темы корпуса", import: "Открыть .css", download: "Скачать тему",
+    hint: "Примерный вид: в приложении корпус, колесо и экран рисуются так же, но шрифт и эффекты могут немного отличаться.",
+    sName: "Название", name: "Название в списке корпусов", sBody: "Корпус", sPics: "Картинки", sSettings: "Настройки при выборе корпуса",
+    sFile: "Файл темы", pick: "Выбрать", bodyImage: "Картинка на весь корпус",
+    bodyImageHint: "Вместо цвета корпуса, обрезается по размеру телефона. Лучше вертикальная, 1080×2400.",
+    menuImage: "Фон главного меню", menuImageHint: "Только первый экран, обрезается по размеру экрана.",
+    veil: "Вуаль над фоном меню", veilHint: "Цвет экрана поверх картинки, чтобы текст читался.",
+    fileHint: "Без картинок скачается .css, с картинками — .zip (css + картинки). В Monopod: Настройки → Внешний вид → Корпус → «+ Добавить».",
+    auto: "авто", none: "нет", keep: "не менять",
+    body: "Корпус", finish: "Поверхность", rim: "Кант по краю",
+    bezel: "Стекло вокруг экрана", "screen-frame": "Рамка экрана", wheel: "Колесо",
+    "wheel-edge": "Колесо: обводка", "wheel-label": "Подписи на колесе", center: "Центр",
+    "center-edge": "Центр: обводка", "system-icons": "Значки статус-бара",
+    style: "Стиль", colors: "Цвета", layout: "Раскладка", effect: "Эффект экрана", "effect-strength": "Сила эффекта",
+    "dark-screen": "Тёмный экран", font: "Шрифт", "hide-status-bar": "Скрыть статус-бар",
+    v: { gloss: "глянец", brushed: "шлифованный металл", matte: "мат", dark: "тёмные", light: "светлые", auto: "авто",
+      ipod: "iPod", material: "Material", cover: "из обложки", system: "из системы", multicolor: "разноцветный",
+      blue: "синий", purple: "фиолетовый", pink: "розовый", red: "красный", orange: "оранжевый", yellow: "жёлтый",
+      green: "зелёный", graphite: "графит", classic: "классика", big: "большой экран",
+      off: "выкл", lcd: "цветной LCD", crt: "ЭЛТ", mono: "монохром", on: "вкл", pixel: "пиксельный",
+      true: "да", false: "нет" },
+    menu: ["Музыка", "Перемешать песни", "Spotify", "Яндекс Музыка", "Настройки"],
+    errName: "Впишите название.", bad: "Файл не похож на тему Monopod: ",
+  },
+  en: {
+    title: "Monopod — body theme editor", import: "Open .css", download: "Download theme",
+    hint: "An approximation: the app draws the body, wheel and screen the same way, but fonts and effects may differ a little.",
+    sName: "Name", name: "Name in the body list", sBody: "Body", sPics: "Pictures", sSettings: "Settings applied when picked",
+    sFile: "Theme file", pick: "Choose", bodyImage: "Picture over the whole body",
+    bodyImageHint: "Instead of the body color, cropped to the phone. Tall works best, 1080×2400.",
+    menuImage: "Main menu background", menuImageHint: "First screen only, cropped to the screen.",
+    veil: "Veil over the menu picture", veilHint: "Screen color over the picture so the text stays readable.",
+    fileHint: "Without pictures you get a .css, with pictures a .zip (css + pictures). In Monopod: Settings → Appearance → Body → “+ Add”.",
+    auto: "auto", none: "none", keep: "don't change",
+    body: "Body", finish: "Surface", rim: "Edge rim",
+    bezel: "Glass around the screen", "screen-frame": "Screen frame", wheel: "Wheel",
+    "wheel-edge": "Wheel: outline", "wheel-label": "Wheel labels", center: "Center",
+    "center-edge": "Center: outline", "system-icons": "Status bar icons",
+    style: "Style", colors: "Colors", layout: "Layout", effect: "Screen effect", "effect-strength": "Effect strength",
+    "dark-screen": "Dark screen", font: "Font", "hide-status-bar": "Hide status bar",
+    v: { gloss: "gloss", brushed: "brushed metal", matte: "matte", dark: "dark", light: "light", auto: "auto",
+      ipod: "iPod", material: "Material", cover: "from cover", system: "from wallpaper", multicolor: "multicolor",
+      blue: "blue", purple: "purple", pink: "pink", red: "red", orange: "orange", yellow: "yellow",
+      green: "green", graphite: "graphite", classic: "classic", big: "big screen",
+      off: "off", lcd: "color LCD", crt: "CRT", mono: "mono", on: "on", pixel: "pixel",
+      true: "yes", false: "no" },
+    menu: ["Music", "Shuffle Songs", "Spotify", "Yandex Music", "Settings"],
+    errName: "Enter a name.", bad: "This does not look like a Monopod theme: ",
+  },
+};
+let lang = (navigator.language || "ru").startsWith("ru") ? "ru" : "en";
+const t = k => T[lang][k] ?? k;
+const tv = v => T[lang].v[v] ?? v;
+
+// ── The theme being edited (same keys as the theme file) ─────────────────────
+const COLOR_KEYS = [
+  // key, default, optional: "none" = can be switched off, "auto" = the app derives it
+  ["body", "#2B3A55"],
+  ["finish", "gloss", "select", ["gloss", "brushed", "matte"]],
+  ["rim", "#BFC2C7", "none"], ["bezel", "#0B0F18"], ["screen-frame", "#B88AA4", "none"],
+  ["wheel", "#34456A", "auto"], ["wheel-edge", "#0B0F18", "auto"],
+  ["wheel-label", "#C9D3E6", "auto"], ["center", "#3B4D74", "auto"],
+  ["center-edge", "#0B0F18", "auto"],
+  ["system-icons", "auto", "select", ["auto", "dark", "light"]],
+];
+// Solid colors only: the file still has a top and a bottom for these, both get the same color
+const SOLID = { body: true, wheel: true, center: true };
+const SETTINGS = [
+  ["style", ["ipod", "material"]],
+  ["colors", ["cover", "multicolor", "blue", "purple", "pink", "red", "orange", "yellow", "green", "graphite", "system"]],
+  ["layout", ["classic", "big"]],
+  ["effect", ["off", "lcd", "crt", "mono"]],
+  ["effect-strength", ["0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"]],
+  ["dark-screen", ["off", "on", "system"]],
+  ["font", ["classic", "pixel", "mono"]],
+  ["hide-status-bar", ["false", "true"]],
+];
+const ACCENTS = {
+  cover: ["#6DB3F2", "#1C6CCF"], multicolor: ["#6DB3F2", "#1C6CCF"], blue: ["#4BA3FF", "#0A63E0"],
+  purple: ["#B57BD9", "#7D3BAA"], pink: ["#F48FC0", "#D83C88"], red: ["#F37C78", "#C9302C"],
+  orange: ["#FFB25E", "#E07612"], yellow: ["#FFDC5E", "#E0A800"], green: ["#8EDB6A", "#3E9E22"],
+  graphite: ["#B4B7BC", "#6E7278"], system: ["#7895D6", "#3D5BA9"],
+};
+
+const state = {
+  name: "Midnight Blue",
+  colors: Object.fromEntries(COLOR_KEYS.map(([k, d]) => [k, d])),
+  off: { rim: true, "screen-frame": true },            // "none"
+  auto: {},                                             // derived by the app
+  settings: { style: "ipod", colors: "blue", layout: "classic", effect: "lcd", "effect-strength": "40%", "dark-screen": "on", font: "classic", "hide-status-bar": "false" },
+  bodyPic: null, menuPic: null,                         // { name, bytes: Uint8Array, url }
+  veil: 35,
+};
+
+// ── Color helpers (the same derivation as the app's parser) ───────────────────
+const hex2rgb = h => { h = h.replace("#", ""); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255); };
+const rgb2hex = c => "#" + c.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, "0")).join("").toUpperCase();
+const lerp = (a, b, f) => rgb2hex(hex2rgb(a).map((v, i) => v + (hex2rgb(b)[i] - v) * f));
+const lum = h => { const [r, g, b] = hex2rgb(h).map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)); return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+
+/** What the app will actually draw: optional colors filled in like its parser does. */
+function resolved() {
+  const c = state.colors, top = c.body, bottom = c.body;
+  const icons = c["system-icons"];
+  const light = icons === "dark" ? true : icons === "light" ? false : lum(lerp(top, bottom, 0.5)) > 0.5;
+  const shade = light ? "#000000" : "#FFFFFF";
+  const pick = (k, f) => state.auto[k] ? f() : c[k];
+  const wheelTop = pick("wheel", () => lerp(top, shade, 0.08)), wheelBottom = wheelTop;
+  const edge = pick("wheel-edge", () => lerp(bottom, "#000000", 0.35));
+  return {
+    top, bottom, light, finish: c.finish,
+    rim: state.off.rim ? null : c.rim, bezel: c.bezel, frame: state.off["screen-frame"] ? null : c["screen-frame"],
+    wheelTop, wheelBottom, edge,
+    label: pick("wheel-label", () => lerp(wheelBottom, light ? "#000000" : "#FFFFFF", 0.55)),
+    centerTop: pick("center", () => lerp(top, shade, 0.04)),
+    centerBottom: pick("center", () => lerp(bottom, shade, 0.04)),
+    centerEdge: pick("center-edge", () => edge),
+  };
+}
+
+// ── Form ─────────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function buildForm() {
+  document.querySelectorAll("[data-t]").forEach(el => { el.textContent = t(el.dataset.t); });
+  $("lang").textContent = lang === "ru" ? "EN" : "RU";
+  document.documentElement.lang = lang;
+  $("name").value = state.name;
+
+  const rows = $("bodyRows"); rows.innerHTML = "";
+  for (const [key, , kind, options] of COLOR_KEYS) {
+    const row = document.createElement("div"); row.className = "row";
+    const label = document.createElement("label"); label.innerHTML = `<span>${t(key)}</span><small>${key}</small>`;
+    const ctl = document.createElement("div"); ctl.className = "ctl";
+    if (kind === "select") {
+      const sel = document.createElement("select");
+      options.forEach(o => sel.add(new Option(tv(o), o)));
+      sel.value = state.colors[key];
+      sel.onchange = () => { state.colors[key] = sel.value; render(); };
+      ctl.append(sel);
+    } else {
+      const input = document.createElement("input"); input.type = "color"; input.value = state.colors[key];
+      input.oninput = () => { state.colors[key] = input.value.toUpperCase(); render(); };
+      if (kind === "none" || kind === "auto") {
+        const flag = kind === "none" ? state.off : state.auto;
+        const box = document.createElement("label"); box.className = "chk";
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!flag[key];
+        input.disabled = cb.checked;
+        cb.onchange = () => { flag[key] = cb.checked; input.disabled = cb.checked; render(); };
+        box.append(cb, t(kind === "none" ? "none" : "auto"));
+        ctl.append(box);
+      }
+      ctl.append(input);
+    }
+    row.append(label, ctl); rows.append(row);
+  }
+
+  const sets = $("setRows"); sets.innerHTML = "";
+  for (const [key, values] of SETTINGS) {
+    const row = document.createElement("div"); row.className = "row";
+    const label = document.createElement("label"); label.innerHTML = `<span>${t(key)}</span><small>${key}</small>`;
+    const ctl = document.createElement("div"); ctl.className = "ctl";
+    const sel = document.createElement("select");
+    sel.add(new Option("— " + t("keep") + " —", ""));
+    values.forEach(o => sel.add(new Option(key === "effect-strength" ? o : tv(o), o)));
+    sel.value = state.settings[key] ?? "";
+    sel.onchange = () => { if (sel.value) state.settings[key] = sel.value; else delete state.settings[key]; render(); };
+    ctl.append(sel); row.append(label, ctl); sets.append(row);
+  }
+  $("veilR").value = state.veil;
+  render();
+}
+
+$("name").oninput = e => { state.name = e.target.value; render(); };
+$("veilR").oninput = e => { state.veil = +e.target.value; render(); };
+$("lang").onclick = () => { lang = lang === "ru" ? "en" : "ru"; buildForm(); };
+
+function takePicture(input, slot, base) {
+  input.onchange = async () => {
+    const f = input.files[0]; if (!f) return;
+    const ext = (f.name.split(".").pop() || "png").toLowerCase().replace("jpeg", "jpg");
+    // A data: URL, not a blob: one: those do not load when the page itself is opened from a file
+    const url = await new Promise(done => { const fr = new FileReader(); fr.onload = () => done(fr.result); fr.readAsDataURL(f); });
+    state[slot] = { name: `${base}.${ext}`, bytes: new Uint8Array(await f.arrayBuffer()), url };
+    input.value = ""; render();
+  };
+}
+takePicture($("bodyFile"), "bodyPic", "body");
+takePicture($("menuFile"), "menuPic", "menu");
+$("bodyClear").onclick = () => { state.bodyPic = null; render(); };
+$("menuClear").onclick = () => { state.menuPic = null; render(); };
+
+// ── Preview ──────────────────────────────────────────────────────────────────
+function render() {
+  const r = resolved(), s = state.settings;
+  const material = s.style === "material";
+  const dark = s["dark-screen"] === "on" || (s["dark-screen"] === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  const accent = ACCENTS[material ? (s.colors === "system" ? "system" : "cover") : (s.colors && s.colors !== "system" ? s.colors : "multicolor")];
+  const screen = dark
+    ? { bg: "#141517", text: "#ECEDEF", dim: "#8E9399", barTop: "#3B3E44", barBottom: "#1C1E22", line: "#000" }
+    : { bg: "#FFFFFF", text: "#111114", dim: "#8A8B90", barTop: "#FDFDFE", barBottom: "#C4C8CE", line: "#8D9197" };
+
+  $("body").classList.toggle("material", material);
+  // Body: color, picture, finish, rim
+  $("bodyGrad").style.background = r.top;
+  $("bodyPic").style.background = state.bodyPic && !material ? `center / cover no-repeat url(${state.bodyPic.url})` : "none";
+  $("bodyFinish").style.background =
+    r.finish === "matte" ? "none" :
+    r.finish === "brushed"
+      ? "radial-gradient(circle at 30% 0, rgba(255,255,255,.18), transparent 70%), repeating-linear-gradient(rgba(255,255,255,.035) 0 1px, rgba(0,0,0,.02) 1px 2px)"
+      : "radial-gradient(circle at 30% 0, rgba(255,255,255,.18), transparent 70%)";
+  $("bodyRim").style.boxShadow = r.rim ? `inset 0 0 0 3px ${r.rim}, inset 0 0 0 4px rgba(255,255,255,.6)` : "none";
+  $("bodyRim").style.borderRadius = "30px";
+  $("status").style.color = r.light ? "#16161a" : "#f2f2f5";
+  $("status").style.visibility = s["hide-status-bar"] === "true" ? "hidden" : "visible";
+
+  // Layout: the wheel stays put; big grows the screen up and to the sides
+  const layout = s.layout || "classic";
+  const scr = $("screen"), wh = $("wheel");
+  wh.style.width = wh.style.height = "236px"; wh.style.top = "318px";
+  if (layout === "big") { scr.style.left = scr.style.right = "6px"; scr.style.top = "32px"; scr.style.height = "268px"; }
+  else { scr.style.left = scr.style.right = "16px"; scr.style.top = "42px"; scr.style.height = "215px"; }
+
+  // Screen: frame, bezel, LCD
+  $("screen").style.boxShadow = r.frame ? `0 0 0 3px ${r.frame}` : "none";
+  $("glass").style.background = material ? screen.bg : r.bezel;
+  const lcd = $("lcd");
+  lcd.style.background = screen.bg; lcd.style.color = screen.text;
+  lcd.style.fontFamily = material ? "system-ui, sans-serif" : s.font === "pixel" ? "'Tiny5', monospace" : s.font === "mono" ? "ui-monospace, monospace" : "system-ui, -apple-system, sans-serif";
+  const bar = $("bar");
+  bar.style.background = material ? screen.bg : `linear-gradient(${screen.barTop}, ${screen.barBottom})`;
+  bar.style.borderColor = material ? "transparent" : screen.line;
+  bar.querySelector(".play").style.color = accent[1];
+
+  const list = $("list");
+  list.querySelectorAll(".item").forEach(n => n.remove());
+  T[lang].menu.forEach((label, i) => {
+    const it = document.createElement("div"); it.className = "item";
+    if (i === 0) {
+      if (material) { it.style.background = `${accent[0]}55`; it.style.borderRadius = "9px"; it.style.margin = "1px 4px"; }
+      else { it.style.background = `linear-gradient(${accent[0]}, ${accent[1]})`; it.style.color = "#fff"; }
+    }
+    if (i === 2) it.innerHTML = `<span class="ic" style="background:#1ED760"></span>`;
+    if (i === 3) it.innerHTML = `<span class="ic" style="background:#222;box-shadow:inset 0 0 0 4px #FFBC2D"></span>`;
+    it.append(label);
+    if (i !== 1) { const c = document.createElement("span"); c.className = "chev"; c.textContent = "›"; it.append(c); }
+    list.append(it);
+  });
+  $("menuPic").style.backgroundImage = state.menuPic && !material ? `url(${state.menuPic.url})` : "none";
+  $("veil").style.background = state.menuPic && !material ? screen.bg : "transparent";
+  $("veil").style.opacity = state.veil / 100;
+  $("veilV").textContent = state.veil + "%";
+
+  // Effect (approximate)
+  const strength = parseInt(s["effect-strength"] ?? "40") / 100, fx = $("fx");
+  fx.style.background = "none"; fx.style.boxShadow = "none"; lcd.style.filter = "none";
+  if (s.effect === "lcd") fx.style.background = `repeating-linear-gradient(rgba(0,0,0,${0.12 * strength}) 0 1px, transparent 1px 3px)`;
+  if (s.effect === "crt") {
+    fx.style.background = `repeating-linear-gradient(rgba(0,0,0,${0.3 * strength}) 0 2px, transparent 2px 4px)`;
+    fx.style.boxShadow = `inset 0 0 ${40 * strength + 10}px rgba(0,0,0,${0.6 * strength})`;
+  }
+  if (s.effect === "mono") {
+    lcd.style.filter = `grayscale(${strength}) sepia(${0.5 * strength}) hue-rotate(${60 * strength}deg)`;
+    fx.style.background = `repeating-linear-gradient(90deg, rgba(0,0,0,${0.1 * strength}) 0 1px, transparent 1px 3px), repeating-linear-gradient(rgba(0,0,0,${0.1 * strength}) 0 1px, transparent 1px 3px)`;
+  }
+
+  // Wheel
+  wh.style.background = r.wheelTop;
+  wh.style.boxShadow = `0 0 0 1.5px ${r.edge}`;
+  const place = (id, x, y) => { const el = $(id); el.style.left = x; el.style.top = y; el.style.transform = "translate(-50%, -50%)"; el.style.color = r.label; };
+  place("lMenu", "50%", "13%"); place("lPrev", "13%", "50%"); place("lNext", "87%", "50%"); place("lPlay", "50%", "87%");
+  $("center").style.background = r.centerTop;
+  $("center").style.boxShadow = `0 0 0 1.5px ${r.centerEdge}`;
+
+  $("out").value = themeCss();
+  $("err").textContent = state.name.trim() ? "" : t("errName");
+}
+
+// ── The theme file ────────────────────────────────────────────────────────────
+function themeCss() {
+  const c = state.colors, L = [];
+  L.push("/* Made with the Monopod theme editor. Fields: see monopod-theme-template.css */", "", "monopod-theme {");
+  L.push(`    name: "${state.name.trim().replace(/["\\;{}]/g, "")}";`, "");
+  for (const [key, , kind] of COLOR_KEYS) {
+    if (kind === "none" && state.off[key]) { L.push(`    ${key}: none;`); continue; }
+    if (kind === "auto" && state.auto[key]) continue;
+    if (SOLID[key]) L.push(`    ${key}-top: ${c[key]};`, `    ${key}-bottom: ${c[key]};`);
+    else L.push(`    ${key}: ${c[key]};`);
+  }
+  L.push("");
+  L.push(`    body-image: ${state.bodyPic ? `url("${state.bodyPic.name}")` : "none"};`);
+  L.push(`    menu-image: ${state.menuPic ? `url("${state.menuPic.name}")` : "none"};`);
+  L.push(`    menu-image-veil: ${state.veil}%;`);
+  const set = SETTINGS.filter(([k]) => state.settings[k]);
+  if (set.length) L.push("");
+  for (const [k] of set) L.push(`    ${k}: ${state.settings[k]};`);
+  L.push("}", "");
+  return L.join("\n");
+}
+
+/** Reads a theme file back into the editor (pictures are not inside a .css). */
+function loadCss(text) {
+  const clean = text.replace(/\/\*[\s\S]*?\*\//g, "");
+  const m = clean.match(/monopod-theme\s*\{([\s\S]*)\}/);
+  if (!m) throw new Error("monopod-theme { … }");
+  const values = {};
+  for (const line of m[1].split(";")) {
+    const i = line.indexOf(":"); if (i < 0) continue;
+    const key = line.slice(0, i).trim().replace(/^--/, "").toLowerCase();
+    let v = line.slice(i + 1).trim();
+    const url = v.match(/url\(\s*["']?([^"')]+)["']?\s*\)/); if (url) v = url[1];
+    values[key] = v.replace(/^["']|["']$/g, "");
+  }
+  if (values.name) state.name = values.name;
+  for (const [key, def, kind] of COLOR_KEYS) {
+    // An older file's gradient comes in as its top color
+    const v = SOLID[key] ? values[key + "-top"] ?? values[key] : values[key];
+    if (kind === "select") { if (v) state.colors[key] = v.toLowerCase(); continue; }
+    if (kind === "none") state.off[key] = !v || v.toLowerCase() === "none";
+    if (kind === "auto") state.auto[key] = !v;
+    if (v && /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(v)) {
+      let h = v.slice(1); if (h.length === 3) h = [...h].map(x => x + x).join(""); if (h.length === 8) h = h.slice(2);
+      state.colors[key] = "#" + h.toUpperCase();
+    }
+  }
+  if (values["menu-image-veil"]) state.veil = parseInt(values["menu-image-veil"]) || 35;
+  // A .css carries no pictures: keep the chosen ones only if the file still names a picture there
+  if (!values["body-image"] || values["body-image"].toLowerCase() === "none") state.bodyPic = null;
+  if (!values["menu-image"] || values["menu-image"].toLowerCase() === "none") state.menuPic = null;
+  state.settings = {};
+  for (const [k] of SETTINGS) if (values[k]) state.settings[k] = values[k].toLowerCase();
+  buildForm();
+}
+$("importCss").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { loadCss(await f.text()); } catch (err) { alert(t("bad") + err.message); }
+  e.target.value = "";
+};
+
+// ── Download: .css, or a .zip (stored, no compression) with the pictures ─────
+const CRC = (() => { const tab = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; tab[n] = c >>> 0; } return tab; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+
+function zip(files) {
+  const enc = new TextEncoder(), parts = [], central = []; let offset = 0;
+  for (const { name, bytes } of files) {
+    const nb = enc.encode(name), crc = crc32(bytes);
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(8, 0, true);
+    local.setUint32(14, crc, true); local.setUint32(18, bytes.length, true); local.setUint32(22, bytes.length, true);
+    local.setUint16(26, nb.length, true);
+    parts.push(new Uint8Array(local.buffer), nb, bytes);
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+    cd.setUint32(16, crc, true); cd.setUint32(20, bytes.length, true); cd.setUint32(24, bytes.length, true);
+    cd.setUint16(28, nb.length, true); cd.setUint32(42, offset, true);
+    central.push(new Uint8Array(cd.buffer), nb);
+    offset += 30 + nb.length + bytes.length;
+  }
+  const cdSize = central.reduce((s, p) => s + p.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], { type: "application/zip" });
+}
+
+function save(blob, name) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+$("download").onclick = () => {
+  if (!state.name.trim()) { $("err").textContent = t("errName"); $("name").focus(); return; }
+  const base = state.name.trim().toLowerCase().replace(/[^a-z0-9а-яё]+/gi, "-").replace(/^-|-$/g, "") || "theme";
+  const css = new TextEncoder().encode(themeCss());
+  const pics = [state.bodyPic, state.menuPic].filter(Boolean);
+  if (!pics.length) save(new Blob([css], { type: "text/css" }), `${base}.css`);
+  else save(zip([{ name: "theme.css", bytes: css }, ...pics]), `${base}.zip`);
+};
+
+buildForm();
+</script>
+</body>
+</html>

@@ -67,7 +67,6 @@
     <string name="settings_effect_intensity">Effect Strength</string>
     <string name="layout_classic">Classic</string>
     <string name="layout_big">Big Screen</string>
-    <string name="layout_full">Full Screen</string>
     <string name="effect_off">Off</string>
     <string name="effect_lcd">Color LCD</string>
     <string name="effect_crt">CRT</string>

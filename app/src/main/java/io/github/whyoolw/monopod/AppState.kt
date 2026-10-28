@@ -21,10 +21,8 @@ import io.github.whyoolw.monopod.ui.theme.CustomBodies
 enum class ScreenLayout(@StringRes val label: Int) {
     /** Screen on top, big wheel below, like the real thing. */
     Classic(R.string.layout_classic),
-    /** Square screen, smaller wheel. */
+    /** Same wheel in the same place, the screen grown up and to the sides. */
     BigScreen(R.string.layout_big),
-    /** The screen fills the phone, the wheel floats over its bottom. */
-    FullScreen(R.string.layout_full),
 }
 
 enum class ScreenEffect(@StringRes val label: Int) {
@@ -141,7 +139,8 @@ class AppState(context: Context) {
             }
         }
         settings["layout"]?.let {
-            layout = when (it) { "big" -> ScreenLayout.BigScreen; "full" -> ScreenLayout.FullScreen; else -> ScreenLayout.Classic }
+            // "full" was a full-screen layout, since dropped
+            layout = when (it) { "big", "full" -> ScreenLayout.BigScreen; else -> ScreenLayout.Classic }
         }
         settings["effect"]?.let { e -> ScreenEffect.entries.firstOrNull { it.name.equals(e, ignoreCase = true) }?.let { effect = it } }
         settings["effect-strength"]?.removeSuffix("%")?.toIntOrNull()?.let { intensity = (it + 5) / 10 }
@@ -156,7 +155,7 @@ class AppState(context: Context) {
         materialColors = pick(MaterialColors.entries.toTypedArray(), "materialColors", materialColors)
         ipodAccent = pick(IpodAccent.entries.toTypedArray(), "accent", ipodAccent)
         theme = AllBodies.firstOrNull { it.id == o.optString("theme") } ?: theme
-        layout = pick(ScreenLayout.entries.toTypedArray(), "layout", layout)
+        layout = if (o.optString("layout") == "FullScreen") ScreenLayout.BigScreen else pick(ScreenLayout.entries.toTypedArray(), "layout", layout)
         effect = pick(ScreenEffect.entries.toTypedArray(), "effect", effect)
         intensity = o.optInt("intensity", intensity)
         darkScreen = pick(DarkScreen.entries.toTypedArray(), "dark", darkScreen)
@@ -181,7 +180,9 @@ class AppState(context: Context) {
         get() = _clickHaptics
         set(v) { _clickHaptics = v; prefs.edit { putBoolean(KEY_HAPTICS, v) } }
 
-    private var _layout by mutableStateOf(load(KEY_LAYOUT, ScreenLayout.Classic))
+    private var _layout by mutableStateOf(
+        if (prefs.getString(KEY_LAYOUT, null) == "FullScreen") ScreenLayout.BigScreen else load(KEY_LAYOUT, ScreenLayout.Classic),
+    )
     var layout: ScreenLayout
         get() = _layout
         set(v) { _layout = v; prefs.edit { putString(KEY_LAYOUT, v.name) } }

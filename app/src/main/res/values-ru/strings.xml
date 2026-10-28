@@ -67,7 +67,6 @@
     <string name="settings_effect_intensity">Сила эффекта</string>
     <string name="layout_classic">Классика</string>
     <string name="layout_big">Большой экран</string>
-    <string name="layout_full">Весь экран</string>
     <string name="effect_off">Выкл</string>
     <string name="effect_lcd">Цветной LCD</string>
     <string name="effect_crt">ЭЛТ</string>

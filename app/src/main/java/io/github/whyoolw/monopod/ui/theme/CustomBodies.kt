@@ -135,6 +135,7 @@ object CustomBodies {
     val SETTINGS = mapOf(
         "style" to setOf("ipod", "material"),
         "colors" to setOf("cover", "system", "multicolor", "blue", "purple", "pink", "red", "orange", "yellow", "green", "graphite"),
+        // "full" is the dropped full-screen layout; it now means big
         "layout" to setOf("classic", "big", "full"),
         "effect" to setOf("off", "lcd", "crt", "mono"),
         "effect-strength" to emptySet(),
