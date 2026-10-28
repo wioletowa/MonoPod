@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Yandex Music menu row: a yellow star burst on a near-black disc -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FF222222"
+        android:pathData="M12,0.4a11.6,11.6 0,1 1,0 23.2a11.6,11.6 0,1 1,0 -23.2z" />
+    <path
+        android:fillColor="#FFFFBC2D"
+        android:pathData="M6.50,6.50L12.29,8.76L9.70,4.40L13.16,8.13L13.40,4.10L14.35,8.05L16.60,5.30L15.37,8.60L18.50,7.40L15.92,9.53L19.90,10.00L15.96,10.52L19.90,12.80L15.58,11.36L18.80,15.80L14.94,11.92L16.40,17.40L14.12,12.19L12.70,19.70L12.86,11.92L5.50,16.60L11.92,10.80L4.40,10.30L11.85,9.65Z" />
+</vector>

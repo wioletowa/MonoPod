@@ -1,0 +1,134 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ *  Monopod — custom body theme template / шаблон своего корпуса
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ *  EN: This file describes one body for the Monopod player (an iPod-style
+ *      music player for Android). Edit the values, save the file, then in
+ *      Monopod open Settings → Appearance → Body → "+ Add" and pick the file.
+ *
+ *  RU: Этот файл описывает один корпус для плеера Monopod (плеер в стиле
+ *      iPod для Android). Поменяйте значения, сохраните файл, затем в Monopod
+ *      откройте Настройки → Внешний вид → Корпус → «+ Добавить» и выберите файл.
+ *
+ *  Rules / Правила:
+ *   • One block `monopod-theme { ... }`, lines are `key: value;`.
+ *     Один блок `monopod-theme { ... }`, строки вида `ключ: значение;`.
+ *   • Colors: #RGB, #RRGGBB or #AARRGGBB (alpha first, like Android).
+ *     Цвета: #RGB, #RRGGBB или #AARRGGBB (прозрачность первой, как в Android).
+ *   • Only `name`, `body-top` and `body-bottom` are required. Any other line
+ *     may be deleted: missing body colors are derived from the body, missing
+ *     settings are simply left as the user has them.
+ *     Обязательны только `name`, `body-top` и `body-bottom`. Остальные строки
+ *     можно удалить: недостающие цвета корпуса подбираются от корпуса,
+ *     недостающие настройки просто не меняются.
+ *   • The theme can change the body (colors, finish, two pictures) and set the
+ *     existing settings listed in part 2 — nothing else (no layout code).
+ *     Тема меняет только корпус (цвета, отделку, две картинки) и может выставить
+ *     готовые настройки из части 2 — больше ничего (без своей разметки).
+ *   • Pictures need an archive: put this .css and the pictures side by side
+ *     (no folders) into one .zip and add the .zip. Without pictures the .css
+ *     alone is enough. Up to 20 MB.
+ *     Для картинок нужен архив: положите этот .css и картинки рядом (без папок)
+ *     в один .zip и добавьте .zip. Без картинок достаточно одного .css.
+ *     До 20 МБ.
+ *   • Settings from part 2 are applied once, when the body is picked; the
+ *     user can change them afterwards as usual.
+ *     Настройки из части 2 применяются один раз, при выборе корпуса; потом их
+ *     можно менять как обычно.
+ *   • Comments (between slash-star and star-slash, like this block) are ignored.
+ *     Комментарии (между косой со звёздочкой, как этот блок) не читаются.
+ */
+
+monopod-theme {
+
+    /* Name in the body list / Название в списке корпусов */
+    name: "Midnight Blue";
+
+    /* ── Part 1. The body / Часть 1. Корпус ─────────────────────────────── */
+
+    /* Body gradient, top to bottom / Градиент корпуса сверху вниз */
+    body-top: #2B3A55;
+    body-bottom: #121A2B;
+
+    /* Surface: gloss (shine on top) | brushed (fine metal lines) | matte (no shine)
+       Поверхность: gloss (блик сверху) | brushed (шлифованный металл) | matte (без блика) */
+    finish: gloss;
+
+    /* Thin polished edge around the whole body, or none
+       Тонкий полированный кант по краю корпуса, или none */
+    rim: none;
+
+    /* Black glass around the screen / Чёрное стекло вокруг экрана */
+    bezel: #0B0F18;
+
+    /* Colored ring around the screen glass, or none (like "Pastel mini")
+       Цветная рамка вокруг стекла экрана, или none (как у «Пастель mini») */
+    screen-frame: none;
+
+    /* Click wheel: gradient, outline, MENU/⏮/⏭/⏯ labels
+       Колесо: градиент, обводка, подписи MENU/⏮/⏭/⏯ */
+    wheel-top: #34456A;
+    wheel-bottom: #22304D;
+    wheel-edge: #0B0F18;
+    wheel-label: #C9D3E6;
+
+    /* Center button: gradient and outline / Центральная кнопка: градиент и обводка */
+    center-top: #3B4D74;
+    center-bottom: #26355A;
+    center-edge: #0B0F18;
+
+    /* ── Pictures (only in a .zip theme) / Картинки (только в теме-архиве .zip) ──
+       PNG, JPG or WEBP, by file name inside the archive: url("body.jpg").
+       none (or no line) = no picture.
+       PNG, JPG или WEBP, по имени файла в архиве: url("body.jpg").
+       none (или нет строки) = без картинки. */
+
+    /* Over the whole body instead of the gradient, cropped to fill the phone
+       (tall pictures fit best, e.g. 1080×2400)
+       На весь корпус вместо градиента, обрезается по размеру телефона
+       (лучше вертикальная, например 1080×2400) */
+    body-image: none;
+
+    /* Behind the main menu list only (the first screen), cropped to fill
+       Фон только главного меню (первый экран), обрезается по размеру */
+    menu-image: none;
+
+    /* Screen color laid over the menu picture so the text stays readable: 0% … 100%
+       Цвет экрана поверх картинки меню, чтобы текст читался: 0% … 100% */
+    menu-image-veil: 35%;
+
+    /* Phone status bar icons: dark (for light bodies) | light (for dark bodies) | auto
+       Значки статус-бара телефона: dark (для светлых корпусов) | light (для тёмных) | auto */
+    system-icons: auto;
+
+    /* ── Part 2. Settings applied when picked (optional) ───────────────────
+       ── Часть 2. Настройки при выборе корпуса (можно удалить любые) ────── */
+
+    /* Style / Стиль: ipod | material */
+    style: ipod;
+
+    /* Colors / Цвета.
+       ipod style:     cover | multicolor | blue | purple | pink | red | orange | yellow | green | graphite
+       material style: cover | system
+       Стиль ipod — акцентный цвет (cover = из обложки); material — cover (из обложки) | system (из обоев) */
+    colors: blue;
+
+    /* Layout / Раскладка: classic | big | full */
+    layout: classic;
+
+    /* Screen effect / Эффект экрана: off | lcd | crt | mono */
+    effect: lcd;
+
+    /* Effect strength / Сила эффекта: 0% … 100% */
+    effect-strength: 40%;
+
+    /* Dark screen / Тёмный экран: off | on | system */
+    dark-screen: on;
+
+    /* Font (ipod style only) / Шрифт (только стиль ipod): classic | pixel | mono */
+    font: classic;
+
+    /* Hide the phone status bar / Скрыть статус-бар телефона: true | false */
+    hide-status-bar: false;
+}

@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="menu_music">Музыка</string>
+    <string name="menu_cover_flow">Cover Flow</string>
+    <string name="menu_playlists">Плейлисты</string>
+    <string name="menu_artists">Артисты</string>
+    <string name="menu_albums">Альбомы</string>
+    <string name="menu_songs">Песни</string>
+    <string name="menu_genres">Жанры</string>
+    <string name="menu_shuffle_songs">Перемешать песни</string>
+    <string name="menu_now_playing">Сейчас играет</string>
+    <string name="menu_settings">Настройки</string>
+
+    <string name="settings_appearance">Внешний вид</string>
+    <string name="settings_body">Корпус</string>
+    <string name="settings_layout">Раскладка</string>
+    <string name="settings_screen_effect">Эффект экрана</string>
+    <string name="settings_font">Шрифт</string>
+    <string name="settings_clicker">Щелчки</string>
+    <string name="settings_shuffle">Перемешивание</string>
+    <string name="settings_repeat">Повтор</string>
+    <string name="settings_eq">Эквалайзер</string>
+    <string name="settings_sound">Звук</string>
+    <string name="settings_sleep">Таймер сна</string>
+    <string name="settings_library">Папки с музыкой</string>
+    <string name="settings_about">О плеере</string>
+
+    <string name="clicker_sound">Звук щелчка</string>
+    <string name="clicker_haptics">Вибрация</string>
+    <string name="on">Вкл</string>
+    <string name="off">Выкл</string>
+
+    <string name="theme_white">Белый</string>
+    <string name="theme_black">Чёрный</string>
+    <string name="theme_silver">Серебристый</string>
+    <string name="theme_blue">Синий</string>
+    <string name="theme_red">Красный</string>
+
+    <string name="coming_in_stage">Появится на этапе %1$d</string>
+    <string name="about_text">Monopod 1.7.0\n\nПиксельный шрифт: Tiny5 (SIL OFL 1.1)</string>
+
+    <string name="all_songs">Все песни</string>
+    <string name="unknown_artist">Неизвестный артист</string>
+    <string name="unknown_album">Неизвестный альбом</string>
+    <string name="unknown_genre">Без жанра</string>
+    <string name="library_no_folders">Музыки пока нет.\nДобавь папку в\nНастройки → Папки с музыкой</string>
+    <string name="library_no_music">В папках библиотеки\nне найдено музыки</string>
+    <string name="library_scanning">Сканирую музыку…</string>
+    <string name="library_no_songs">Нет песен</string>
+    <string name="folder_add">Добавить папку…</string>
+    <string name="folder_remove">Убрать из библиотеки</string>
+    <string name="folder_rescan">Пересканировать</string>
+    <string name="scanning">Сканирую…</string>
+    <plurals name="song_count">
+        <item quantity="one">%1$d песня</item>
+        <item quantity="few">%1$d песни</item>
+        <item quantity="many">%1$d песен</item>
+        <item quantity="other">%1$d песни</item>
+    </plurals>
+
+    <string name="nothing_playing">Ничего не играет</string>
+    <string name="queue_position">%1$d из %2$d</string>
+    <string name="shuffle_songs">Песни</string>
+    <string name="repeat_one">Одну</string>
+    <string name="repeat_all">Все</string>
+
+    <string name="settings_effect_intensity">Сила эффекта</string>
+    <string name="layout_classic">Классика</string>
+    <string name="layout_big">Большой экран</string>
+    <string name="layout_full">Весь экран</string>
+    <string name="effect_off">Выкл</string>
+    <string name="effect_lcd">Цветной LCD</string>
+    <string name="effect_crt">ЭЛТ</string>
+    <string name="effect_mono">Монохром</string>
+    <string name="font_classic">Классика</string>
+    <string name="font_pixel">Пиксельный</string>
+    <string name="font_mono">Моно</string>
+
+    <string name="eq_custom">Свой</string>
+    <string name="db_value">%1$s дБ</string>
+    <string name="hz">%1$d Гц</string>
+    <string name="khz">%1$.1f кГц</string>
+    <string name="crossfade">Плавный переход</string>
+    <string name="sound_check">Выравнивание громкости</string>
+    <string name="sound_check_track">По песням</string>
+    <string name="sound_check_album">По альбомам</string>
+    <string name="seconds">%1$d с</string>
+    <string name="minutes">%1$d мин</string>
+    <string name="sleep_end_of_song">Конец песни</string>
+
+
+    <string name="hide_status_bar">Скрыть статус-бар</string>
+    <string name="haptic_strength">Сила вибрации</string>
+
+    <string name="dark_screen">Тёмный экран</string>
+    <string name="dark_system">Как в системе</string>
+    <string name="quick_settings">Быстрые настройки</string>
+
+    <string name="eq_save">Сохранить как пресет</string>
+    <string name="eq_user_name">Мой пресет %1$d</string>
+    <string name="eq_presets">Пресеты</string>
+    <string name="eq_delete">Удалить</string>
+    <string name="eq_restore">Восстановить стандартные</string>
+
+    <string name="smart_top25">Топ-25</string>
+    <string name="smart_top_rated">Лучшие по рейтингу</string>
+    <string name="smart_recently_played">Недавно игравшие</string>
+    <string name="smart_recently_added">Недавно добавленные</string>
+
+    <string name="stickers">Наклейки</string>
+    <string name="sticker_add">Добавить</string>
+    <string name="sticker_delete">Удалить</string>
+    <string name="sticker_done">Готово</string>
+
+    <string name="dev_mode">Режим разработчика</string>
+    <string name="dev_crt_speed">Скорость ряби ЭЛТ</string>
+    <string name="dev_haptic_mode">Тип вибрации</string>
+    <string name="haptic_auto">Авто</string>
+    <string name="haptic_primitive">Примитив</string>
+    <string name="haptic_pulse">Импульс</string>
+    <string name="dev_pulse">Длительность импульса</string>
+    <string name="ms">%1$d мс</string>
+    <string name="dev_haptic_channel">Канал вибрации</string>
+    <string name="channel_touch">Касание</string>
+    <string name="channel_media">Медиа</string>
+    <string name="dev_motor_amplitude">Мотор: сила</string>
+    <string name="dev_motor_primitives">Мотор: примитивы</string>
+    <string name="dev_motor_used">Мотор: используется</string>
+    <string name="yes">Да</string>
+    <string name="no">Нет</string>
+    <string name="dev_wheel_degrees">Колесо: градусов на щелчок</string>
+    <string name="dev_accel">Ускорение прокрутки</string>
+    <string name="accel_off">Выкл</string>
+    <string name="accel_gentle">Мягкое</string>
+    <string name="accel_normal">Обычное</string>
+    <string name="accel_strong">Сильное</string>
+    <string name="accel_wild">Безумное</string>
+    <string name="dev_click_volume">Громкость щелчка</string>
+    <string name="dev_reset">Сбросить</string>
+
+    <string name="theme_pastel">Пастель mini</string>
+    <string name="theme_ceramic">Керамика</string>
+    <string name="theme_nano">Nano 3G</string>
+
+    <string name="style">Стиль</string>
+    <string name="style_ipod">iPod</string>
+    <string name="style_material">Material</string>
+    <string name="material_colors">Цвета</string>
+    <string name="colors_cover">Из обложки</string>
+    <string name="colors_system">Из системы</string>
+
+    <string name="spotify_playlists">Мои плейлисты</string>
+    <string name="spotify_liked">Любимые треки</string>
+    <string name="spotify_login">Войти</string>
+    <string name="spotify_logout">Выйти</string>
+    <string name="spotify_loading">Загрузка…</string>
+    <string name="spotify_empty">Здесь пусто</string>
+    <string name="spotify_failed">Не загрузилось\n(%1$s)</string>
+    <string name="spotify_signed_out">Войдите в Spotify:\nстраница входа откроется\nв браузере</string>
+    <string name="spotify_not_installed">Установите приложение\nSpotify: музыку играет оно\n(нужен Premium)</string>
+    <string name="spotify_connecting">Подключаюсь к Spotify…</string>
+    <string name="spotify_error">Spotify не подключился\n(%1$s)</string>
+    <string name="accent_color">Акцентный цвет</string>
+    <string name="accent_multicolor">Разноцветный</string>
+    <string name="accent_blue">Синий</string>
+    <string name="accent_purple">Фиолетовый</string>
+    <string name="accent_pink">Розовый</string>
+    <string name="accent_red">Красный</string>
+    <string name="accent_orange">Оранжевый</string>
+    <string name="accent_yellow">Жёлтый</string>
+    <string name="accent_green">Зелёный</string>
+    <string name="accent_graphite">Графит</string>
+    <string name="spotify_recs">Рекомендации</string>
+    <string name="presets">Пресеты</string>
+    <string name="presets_hint">Удерживайте центр для действий</string>
+    <string name="presets_pick_slot">Выберите слот для сохранения</string>
+    <string name="presets_overwrite">Перезаписать</string>
+    <string name="presets_delete">Удалить</string>
+    <string name="presets_save_current">Сохранить текущую тему?</string>
+    <string name="spotify_play_all">Воспроизвести</string>
+    <string name="spotify_artist">Исполнитель</string>
+    <string name="yandex_music">Яндекс Музыка</string>
+    <string name="yandex_wave">Моя волна</string>
+    <string name="yandex_liked">Мне нравится</string>
+    <string name="online_music">Онлайн музыка</string>
+    <string name="dev_merge_albums">Объединять альбомы</string>
+    <string name="dev_last_crash">Последний сбой</string>
+    <string name="dev_no_crash">Сбоев не было</string>
+    <string name="like">Лайк</string>
+    <string name="add_to">Добавить в…</string>
+    <string name="add_to_failed">Плейлисты не загрузились</string>
+    <string name="add_to_hint">Центр — отметить · MENU — добавить</string>
+    <string name="spotify_relogin">Войти снова (новые права)</string>
+    <string name="theme_update">Обновить из файла</string>
+    <string name="theme_delete">Удалить</string>
+    <string name="theme_download">Скачать шаблон</string>
+    <string name="theme_downloaded">Сохранено в «Загрузки»:\n%1$s\n\nПоменяйте его и добавьте\nчерез «+ Добавить»</string>
+    <string name="theme_download_failed">Не удалось сохранить\nшаблон</string>
+    <string name="theme_add">+ Добавить</string>
+    <string name="theme_added">Корпус «%1$s» добавлен</string>
+    <string name="theme_bad_file">Файл темы не подошёл: %1$s</string>
+    <string name="spotify_setup">Настроить Spotify</string>
+    <string name="spotify_setup_title">Настройка Spotify</string>
+    <string name="spotify_setup_intro">Monopod входит в Spotify через ваше собственное бесплатное приложение Spotify. Откройте developer.spotify.com/dashboard, нажмите «Create app», отметьте «Web API» и «Android» и впишите значения ниже.</string>
+    <string name="spotify_setup_redirect">Redirect URI</string>
+    <string name="spotify_setup_package">Android package name</string>
+    <string name="spotify_setup_sha1">SHA-1 fingerprint (этого APK)</string>
+    <string name="spotify_setup_users">Затем в «User Management» приложения добавьте email своего аккаунта Spotify. Client ID скопируйте из настроек приложения.</string>
+    <string name="spotify_setup_paste">Client ID:</string>
+    <string name="spotify_setup_save">Сохранить</string>
+    <string name="spotify_setup_bad_id">Client ID — 32 символа: цифры и буквы a–f</string>
+    <string name="spotify_setup_copy">Копировать</string>
+    <string name="spotify_setup_copied">Скопировано</string>
+</resources>

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Spotify: sign-in and the playlist lists come from the Web API -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- App Remote talks to the installed Spotify app -->
+    <queries>
+        <package android:name="com.spotify.music" />
+    </queries>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- The equalizer is an audio effect on the player's session -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <application
+        android:name=".Monopod"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Monopod">
+        <!-- Turning the phone shows Cover Flow; Compose handles the change, so the menu stack survives -->
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Spotify sign-in comes back here -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="monopod" android:host="spotify-callback" />
+            </intent-filter>
+        </activity>
+
+        <!-- Headset and Bluetooth buttons reach the player through this, even when it is not running -->
+        <receiver
+            android:name="androidx.media3.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+
+        <!-- Spotify setup: the user's own Client ID -->
+        <activity
+            android:name=".spotify.SpotifySetupActivity"
+            android:exported="false" />
+
+        <!-- Yandex Music sign-in: Yandex's own page in a WebView -->
+        <activity
+            android:name=".yandex.YandexLoginActivity"
+            android:exported="false" />
+
+        <service
+            android:name=".playback.PlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

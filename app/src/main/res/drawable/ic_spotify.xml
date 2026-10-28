@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Spotify menu row: the green disc with three black sound arcs -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#1ED760"
+        android:pathData="M12,0.4a11.6,11.6 0,1 1,0 23.2a11.6,11.6 0,1 1,0 -23.2z" />
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="2.6"
+        android:strokeLineCap="round"
+        android:pathData="M4.7,8.4Q12.3,6 19.4,9.9" />
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="2.25"
+        android:strokeLineCap="round"
+        android:pathData="M5.5,12.1Q12,10.3 18,13.4" />
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="1.8"
+        android:strokeLineCap="round"
+        android:pathData="M5.7,15.8Q11.6,14.4 16.7,16.9" />
+</vector>
