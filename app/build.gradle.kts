@@ -21,8 +21,8 @@ android {
         buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"${localProps.getProperty("spotify.clientId", "")}\"")
         minSdk = 36
         targetSdk = 37
-        versionCode = 17
-        versionName = "1.7.1"
+        versionCode = 18
+        versionName = "1.7.1.1"
     }
 
     buildTypes {

@@ -139,8 +139,14 @@ fun NanoPlaying(
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 // Room under the cover for its reflection in the iPod style
                 val reflect = tilt != 0f
-                val cover = minOf(maxHeight * if (reflect) 0.8f else 0.92f, maxWidth * 0.46f)
-                Row(Modifier.fillMaxSize(), verticalAlignment = if (reflect) Alignment.Top else Alignment.CenterVertically) {
+                val cover = minOf(maxHeight * if (reflect) 0.8f else 0.92f, maxWidth * 0.5f)
+                // A taller screen (big screen layout) leaves room above and below: the cover and its
+                // reflection sit in the middle of it
+                val block = if (reflect) cover * 1.3f else cover
+                Row(
+                    Modifier.fillMaxWidth().height(block).align(Alignment.CenterStart),
+                    verticalAlignment = if (reflect) Alignment.Top else Alignment.CenterVertically,
+                ) {
                     Box(Modifier.graphicsLayer { alpha = if (coverShown) 1f else 0f }) {
                         NanoCover(shown.cover, shown.album, cover, tilt, reflect, onCoverPlaced)
                     }
