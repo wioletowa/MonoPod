@@ -36,6 +36,12 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.merge
 import androidx.activity.result.PickVisualMediaRequest
 import android.os.SystemClock
 import io.github.whyoolw.monopod.ui.coverflow.CoverFlowView
@@ -268,7 +274,28 @@ fun MonopodApp(app: AppState, library: LibraryRepository) {
     val theme = scheme?.let { animatedBody(it, darkScreen) } ?: app.theme
     // A custom body's picture behind the main menu (iPod style, where bodies apply)
     val menuPicture = if (material) null else app.theme.menuImage?.let { MenuPicture(it, app.theme.menuVeil) }
-    val screenFont = if (material) FontFamily.Default else app.font.family()
+    // The first iPod and the green handheld only ever had a pixel font
+    val screenFont = when {
+        app.effect == ScreenEffect.Mono || app.effect == ScreenEffect.GameBoy -> ScreenFont.Pixel.family()
+        material -> FontFamily.Default
+        else -> app.font.family()
+    }
+    // Backlight timer: the screen goes dark after a while without the wheel; touching it lights it up
+    // (touches go through a flow, not state: a click must not recompose the whole app)
+    val touches = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST) }
+    var lit by remember { mutableStateOf(true) }
+    val backlight = app.backlightSeconds
+    LaunchedEffect(backlight) {
+        lit = true
+        if (backlight > 0) {
+            merge(flowOf(Unit), touches).collectLatest {
+                lit = true
+                delay(backlight * 1000L)
+                lit = false
+            }
+        }
+    }
+    val onWheel: (WheelEvent) -> Unit = remember(wheel) { { touches.tryEmit(Unit); wheel.onEvent(it) } }
     SideEffect {
         feedback.soundEnabled = clickSound
         feedback.hapticsEnabled = clickHaptics
@@ -335,6 +362,7 @@ fun MonopodApp(app: AppState, library: LibraryRepository) {
                     crtSpeed = app.crtSpeed / 10f,
                     bezel = theme.bezel,
                     frame = theme.screenFrame,
+                    lit = lit,
                     modifier = mod.onGloballyPositioned { screenRect = it.boundsInRoot() },
                 ) {
                     AnimatedContent(
@@ -364,7 +392,7 @@ fun MonopodApp(app: AppState, library: LibraryRepository) {
             }
             val clickWheel: @Composable (Modifier) -> Unit = { mod ->
                 ClickWheel(
-                    theme = theme, feedback = feedback, onEvent = wheel::onEvent,
+                    theme = theme, feedback = feedback, onEvent = onWheel,
                     degreesPerStep = app.wheelDegrees.toFloat(),
                     material = if (scheme != null && materialLcd != null) {
                         materialWheel(menu.current.page, landscapeFlow, quick, if (spotify.active) spotify.isPlaying else playback.isPlaying, materialLcd, scheme.onPrimary)
@@ -388,6 +416,7 @@ fun MonopodApp(app: AppState, library: LibraryRepository) {
                         crtSpeed = app.crtSpeed / 10f,
                         bezel = theme.bezel,
                         frame = theme.screenFrame,
+                        lit = lit,
                         modifier = Modifier.weight(1f).fillMaxHeight().onGloballyPositioned { screenRect = it.boundsInRoot() },
                     ) {
                         CoverFlowView(landscapeFlow, localSource, playback.volume, stats, { library.snapshot.lyricsFile(it) })
@@ -607,7 +636,7 @@ private fun materialWheel(
         flow != null && flow.open != null -> Icons.Rounded.PlayArrow to false
         flow != null -> Icons.AutoMirrored.Rounded.List to false
         page is NowPlayingPage -> modeIcon(page.mode) to true
-        page is SpotifyNowPlayingPage -> (if (page.scrubbing) Icons.Rounded.FastForward else Icons.AutoMirrored.Rounded.VolumeUp) to true
+        page is SpotifyNowPlayingPage -> modeIcon(page.modes.mode) to true
         else -> Icons.Rounded.Check to false
     }
     return MaterialWheel(

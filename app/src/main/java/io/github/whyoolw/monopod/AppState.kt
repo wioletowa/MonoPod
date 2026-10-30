@@ -31,8 +31,10 @@ enum class ScreenEffect(@StringRes val label: Int) {
     Lcd(R.string.effect_lcd),
     /** Old tube monitor: curved glass, thick lines, a rolling band, flicker. */
     Crt(R.string.effect_crt),
-    /** Grey-blue monochrome LCD with a visible pixel grid, like the first iPods. */
+    /** The first iPod: grey-blue two-tone LCD, pixel font, the selection inverted. */
     Mono(R.string.effect_mono),
+    /** Four shades of green and big pixels, like an old handheld. */
+    GameBoy(R.string.effect_gameboy),
 }
 
 enum class ScreenFont(@StringRes val label: Int) {
@@ -93,6 +95,12 @@ object Prefs {
     /** Developer Mode: one album for songs whose artist lines differ ("5opka" / "5opka, Grechko"). */
     const val MERGE_ALBUMS = "merge_albums"
     const val CROSSFADE_SECONDS = "crossfade_seconds"
+    /** Lyrics from LRCLIB for Spotify and for songs without their own; on unless switched off. */
+    const val ONLINE_LYRICS = "online_lyrics"
+    /** Seconds without wheel input before the screen goes dark; 0 = always lit. */
+    const val BACKLIGHT_SECONDS = "backlight_seconds"
+    /** Whether Spotify is what Monopod plays, kept for the sleep timer's alarm after a restart. */
+    const val SPOTIFY_ACTIVE = "spotify_active"
     const val SOUND_CHECK = "sound_check"
     const val EQ_PRESET = "eq_preset"
     const val EQ_CUSTOM = "eq_custom"
@@ -304,6 +312,20 @@ class AppState(context: Context) {
         crtSpeed = DEFAULT_CRT_SPEED
         if (intensity > 10) intensity = 10
     }
+
+    private var _onlineLyrics by mutableStateOf(prefs.getBoolean(Prefs.ONLINE_LYRICS, true))
+    var onlineLyrics: Boolean
+        get() = _onlineLyrics
+        set(v) {
+            _onlineLyrics = v
+            prefs.edit { putBoolean(Prefs.ONLINE_LYRICS, v) }
+            io.github.whyoolw.monopod.playback.LyricsLoader.forgetOnline()
+        }
+
+    private var _backlight by mutableIntStateOf(prefs.getInt(Prefs.BACKLIGHT_SECONDS, 0))
+    var backlightSeconds: Int
+        get() = _backlight
+        set(v) { _backlight = v; prefs.edit { putInt(Prefs.BACKLIGHT_SECONDS, v) } }
 
     private var _crossfade by mutableIntStateOf(prefs.getInt(Prefs.CROSSFADE_SECONDS, 0))
     var crossfadeSeconds: Int

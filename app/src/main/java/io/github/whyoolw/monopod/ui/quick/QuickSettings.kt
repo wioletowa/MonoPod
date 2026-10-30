@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import io.github.whyoolw.monopod.ui.screen.Heart
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -64,6 +66,8 @@ class QuickRow(
     val label: String,
     val value: () -> String,
     val action: (() -> Unit)? = null,
+    /** For Like: whether the song is liked, shown as a heart; null while unknown (the text shows then). */
+    val liked: (() -> Boolean?)? = null,
     val change: (steps: Int) -> Unit = {},
 )
 
@@ -114,10 +118,9 @@ class QuickSettings(
     var picker by mutableStateOf<PlaylistPicker?>(null)
         private set
 
-    private val likeRow = QuickRow(s(R.string.like), {
-        val on = if (spotify.active) spotify.liked else yandexLikedFor()
-        when (on) { true -> "♥"; false -> "♡"; null -> "…" }
-    }, action = {
+    private fun liked(): Boolean? = if (spotify.active) spotify.liked else yandexLikedFor()
+
+    private val likeRow = QuickRow(s(R.string.like), { "…" }, liked = ::liked, action = {
         if (spotify.active) spotify.toggleLike()
         else yandexTrack?.let { id ->
             val now = yandexLiked ?: return@let
@@ -317,16 +320,19 @@ fun BoxScope.QuickSettingsPanel(quick: QuickSettings) {
                                 style = TextStyle(fontFamily = font, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = color),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
-                            BasicText(
+                            val valueColor = when {
+                                editing -> Lcd.accent
+                                selected -> Lcd.onSelection
+                                else -> Lcd.dimText
+                            }
+                            val liked = r.liked?.invoke()
+                            if (liked != null) Heart(liked, if (selected) Lcd.onSelection else Lcd.text, Modifier.size(18.dp))
+                            else BasicText(
                                 if (editing) "‹ ${r.value()} ›" else r.value(),
                                 style = TextStyle(
                                     fontFamily = font, fontSize = 14.sp,
                                     fontWeight = if (editing) FontWeight.Bold else FontWeight.Normal,
-                                    color = when {
-                                        editing -> Lcd.accent
-                                        selected -> Lcd.onSelection
-                                        else -> Lcd.dimText
-                                    },
+                                    color = valueColor,
                                 ),
                                 maxLines = 1,
                             )

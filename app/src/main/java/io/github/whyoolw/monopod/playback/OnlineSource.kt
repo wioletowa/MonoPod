@@ -6,6 +6,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.extractor.DefaultExtractorsFactory
 import io.github.whyoolw.monopod.Monopod
 import io.github.whyoolw.monopod.yandex.YandexMusic
 
@@ -20,5 +21,8 @@ fun musicSourceFactory(context: Context): DefaultMediaSourceFactory {
         val id = YandexMusic.trackId(spec.uri.toString()) ?: return@Resolver spec
         spec.withUri(Uri.parse(app.yandex.streamUrl(id)))
     }
-    return DefaultMediaSourceFactory(ResolvingDataSource.Factory(DefaultDataSource.Factory(context), resolver))
+    // MP3s without a seek table (Yandex streams, some files) can still seek, as if constant
+    // bitrate; the crossfade tail starts in the middle of a song
+    val extractors = DefaultExtractorsFactory().setConstantBitrateSeekingEnabled(true)
+    return DefaultMediaSourceFactory(ResolvingDataSource.Factory(DefaultDataSource.Factory(context), resolver), extractors)
 }

@@ -28,6 +28,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextStyle
@@ -49,6 +54,9 @@ import io.github.whyoolw.monopod.ScreenEffect
 
 /** Font of everything drawn on the screen, picked in Settings → Appearance → Font. */
 val LocalLcdFont = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
+
+/** Set on the pixel screens (iPod 1G, green LCD): bars are drawn in blocks instead of smooth shapes. */
+val LocalPixelScreen = staticCompositionLocalOf { false }
 
 /** Colors of everything drawn on the screen; light like the iPod, or dark. */
 class LcdColors(
@@ -110,6 +118,16 @@ fun LcdColors.withAccent(top: Color, bottom: Color) = LcdColors(
     accent = bottom, progressTop = top, progressBottom = bottom, material = material,
 )
 
+/**
+ * For the pixel screens: the highlight is the text color with the screen color on it (an
+ * inverted row, like the first iPod), whatever accent or Material color was chosen.
+ */
+fun LcdColors.inverted() = LcdColors(
+    background, text, dimText, selectionTop = text, selectionBottom = text, barTop, barBottom, barLine, bezel,
+    trackTop, trackBottom, placeholder, placeholderText, scrollTrack, glyph,
+    onSelection = background, accent = text, progressTop = text, progressBottom = text, material = material,
+)
+
 val LocalLcd = staticCompositionLocalOf { LightLcd }
 
 /** The current screen palette, readable from any composable as `Lcd.text` and so on. */
@@ -140,13 +158,17 @@ fun LcdScreen(
     shuffle: Boolean = false,
     /** A media3 Player.REPEAT_MODE_* value. */
     repeatMode: Int = 0,
+    /** False once the backlight timer ran out: the screen dims until the wheel is touched. */
+    lit: Boolean = true,
     content: @Composable BoxScope.() -> Unit,
 ) {
-    val palette = colors ?: if (dark) DarkLcd else LightLcd
+    val pixel = effect == ScreenEffect.Mono || effect == ScreenEffect.GameBoy
+    val palette = (colors ?: if (dark) DarkLcd else LightLcd).let { if (pixel) it.inverted() else it }
     // Material: a softly rounded card; iPod: black glass with a thin edge
     val outer = if (palette.material) 18.dp else 10.dp
     val inner = if (palette.material) 14.dp else 5.dp
-    CompositionLocalProvider(LocalLcdFont provides font, LocalLcd provides palette) {
+    val dark by animateFloatAsState(if (lit) 0f else 0.85f, tween(if (lit) 120 else 700), label = "backlight")
+    CompositionLocalProvider(LocalLcdFont provides font, LocalLcd provides palette, LocalPixelScreen provides pixel) {
         Box(
             modifier
                 // The colored rim goes around the screen, so the screen keeps the same size on every body
@@ -163,7 +185,12 @@ fun LcdScreen(
                 .background(if (palette.material) palette.background else bezel)
                 .padding(if (palette.material) 4.dp else 5.dp)
                 .clip(RoundedCornerShape(inner))
-                .screenEffect(effect, effectIntensity, crtSpeed)
+                // Over the effect, so the dark stays dark in every screen mode
+                .drawWithContent {
+                    drawContent()
+                    if (dark > 0f) drawRect(Color.Black.copy(alpha = dark))
+                }
+                .screenEffect(effect, effectIntensity, crtSpeed, darkContent = palette.background.luminance() < 0.5f)
                 .background(Lcd.background),
         ) {
             Column(Modifier.fillMaxSize()) {

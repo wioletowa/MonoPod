@@ -3,6 +3,7 @@ package io.github.whyoolw.monopod.yandex
 import android.content.Context
 import android.content.Intent
 import android.util.Base64
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -129,11 +130,98 @@ class YandexMusic(private val context: Context) {
         return found.map(::playlist)
     }
 
-    /** The next songs of My Wave; [after] is the last one played, so the wave goes on from there. */
+    // --- My Wave ---------------------------------------------------------------------------
+    //
+    // A wave is a rotor session, as in the official app: Yandex picks each batch from what was
+    // already played (the queue) and from the feedback (started, finished, skipped). Without
+    // both it keeps handing out the same few songs.
+
+    // Read by the feedback calls on other threads, so not behind waveTracks' lock
+    @Volatile private var waveSession: String? = null
+    @Volatile private var waveBatch: String? = null
+    /** "id:albumId" of every song this wave has handed out, oldest first. */
+    private val waveSeen = LinkedHashSet<String>()
+    /** Song id → its album, which the queue (yandex://track/ID) does not keep. */
+    private val waveAlbums = java.util.concurrent.ConcurrentHashMap<String, String>()
+
+    /** The next songs of My Wave; null [after] starts a new wave. Never a song this wave already played. */
+    @Synchronized
     fun waveTracks(after: String?): List<YandexTrack> {
-        val q = after?.let { "&queue=$it" } ?: ""
-        val seq = get("/rotor/station/user:onyourwave/tracks?settings2=true$q").getJSONArray("sequence")
-        return (0 until seq.length()).mapNotNull { seq.getJSONObject(it).optJSONObject("track")?.let(::track) }
+        // Only a new wave forgets what was played; without a session (the station) the seen
+        // songs still keep repeats out
+        if (after == null) {
+            waveSession = null
+            waveSeen.clear()
+        }
+        // A batch of nothing but repeats: ask again, the queue tells Yandex what to avoid
+        repeat(3) {
+            val fresh = runCatching { nextWaveBatch().ifEmpty { error("empty batch") } }
+                .getOrElse { e ->
+                    // An expired session stays dead: the next batch starts a new one
+                    Log.w(TAG, "wave session failed, using the station", e)
+                    waveSession = null
+                    stationBatch(after)
+                }
+                .filter { key(it) !in waveSeen }
+                .distinctBy { it.id }
+            if (fresh.isNotEmpty()) {
+                fresh.forEach { waveSeen += key(it) }
+                return fresh
+            }
+        }
+        return emptyList()
+    }
+
+    private fun key(t: YandexTrack) = t.id + (waveAlbums[t.id]?.let { ":$it" } ?: "")
+
+    private fun nextWaveBatch(): List<YandexTrack> {
+        val session = waveSession
+        val result = if (session == null) {
+            val body = JSONObject().put("seeds", JSONArray().put(WAVE)).put("includeTracksInResponse", true)
+            postJson("/rotor/session/new", body).also { waveSession = it.getString("radioSessionId") }
+        } else {
+            postJson("/rotor/session/$session/tracks", JSONObject().put("queue", JSONArray(waveSeen.toList().takeLast(50))))
+        }
+        waveBatch = result.optString("batchId").takeIf { it.isNotEmpty() }
+        val seq = result.optJSONArray("sequence") ?: JSONArray()
+        return (0 until seq.length()).mapNotNull { seq.getJSONObject(it).optJSONObject("track")?.let(::waveTrack) }
+    }
+
+    /** The older station call, for when sessions do not answer. */
+    private fun stationBatch(after: String?): List<YandexTrack> {
+        val q = after?.let { "&queue=" + URLEncoder.encode(waveAlbums[it]?.let { a -> "$it:$a" } ?: it, "UTF-8") } ?: ""
+        val result = get("/rotor/station/$WAVE/tracks?settings2=true$q")
+        waveBatch = result.optString("batchId").takeIf { it.isNotEmpty() }
+        val seq = result.getJSONArray("sequence")
+        return (0 until seq.length()).mapNotNull { seq.getJSONObject(it).optJSONObject("track")?.let(::waveTrack) }
+    }
+
+    private fun waveTrack(o: JSONObject): YandexTrack? {
+        val t = track(o) ?: return null
+        o.optJSONArray("albums")?.optJSONObject(0)?.opt("id")?.toString()?.let { waveAlbums[t.id] = it }
+        return t
+    }
+
+    /**
+     * Tells the wave how a song went: started, finished, or skipped after [playedMs]. This is
+     * what makes the next batch new and closer to taste.
+     */
+    fun waveFeedback(trackId: String, type: String, playedMs: Long = 0L) {
+        val id = waveAlbums[trackId]?.let { "$trackId:$it" } ?: trackId
+        val event = JSONObject()
+            .put("type", type)
+            .put("timestamp", java.time.Instant.now().toString())
+            .put("trackId", id)
+        if (type != "trackStarted") event.put("totalPlayedSeconds", playedMs / 1000.0)
+        val session = waveSession
+        runCatching {
+            if (session != null) {
+                postJson("/rotor/session/$session/feedback", JSONObject().put("event", event).apply { waveBatch?.let { put("batchId", it) } })
+            } else {
+                val batch = waveBatch?.let { "?batch-id=" + URLEncoder.encode(it, "UTF-8") } ?: ""
+                request("$API/rotor/station/$WAVE/feedback$batch", event.toString(), json = true)
+            }
+        }.onFailure { Log.w(TAG, "wave feedback $type failed", it) }
     }
 
     private fun playlist(p: JSONObject): YandexCollection {
@@ -286,7 +374,10 @@ class YandexMusic(private val context: Context) {
 
     private fun postArray(path: String, form: String): JSONArray = JSONObject(request(API + path, form)).getJSONArray("result")
 
-    private fun request(url: String, form: String?, auth: Boolean = true): String {
+    private fun postJson(path: String, body: JSONObject): JSONObject = JSONObject(request(API + path, body.toString(), json = true)).getJSONObject("result")
+
+    /** GET, or POST of [form] (form-encoded, or JSON with [json]). */
+    private fun request(url: String, form: String?, auth: Boolean = true, json: Boolean = false): String {
         val c = URL(url).openConnection() as HttpURLConnection
         if (auth) c.setRequestProperty("Authorization", "OAuth $token")
         c.setRequestProperty("X-Yandex-Music-Client", "YandexMusicAndroid/24023621")
@@ -294,7 +385,7 @@ class YandexMusic(private val context: Context) {
         if (form != null) {
             c.requestMethod = "POST"
             c.doOutput = true
-            c.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+            c.setRequestProperty("Content-Type", if (json) "application/json" else "application/x-www-form-urlencoded")
             c.outputStream.use { it.write(form.toByteArray()) }
         }
         try {
@@ -316,6 +407,8 @@ class YandexMusic(private val context: Context) {
         const val CLIENT_ID = "23cabbbdc6cd418abb4b39c32c41195d"
         private const val KEY_TOKEN = "token"
         private const val KEY_UID = "uid"
+        private const val TAG = "YandexMusic"
+        private const val WAVE = "user:onyourwave"
 
         fun trackId(uri: String): String? =
             uri.takeIf { it.startsWith("yandex://") }?.substringAfterLast('/')?.substringBefore('?')

@@ -7,6 +7,15 @@ import org.junit.Test
 
 class SoundTest {
     @Test
+    fun crossfadeKeepsPowerConstant() {
+        assertEquals(0f, fadeIn(0f), 0.001f)
+        assertEquals(1f, fadeOut(0f), 0.001f)
+        assertEquals(1f, fadeIn(1f), 0.001f)
+        assertEquals(0f, fadeOut(1.5f), 0.001f)
+        for (t in listOf(0.1f, 0.5f, 0.9f)) assertEquals(1f, fadeIn(t) * fadeIn(t) + fadeOut(t) * fadeOut(t), 0.001f)
+    }
+
+    @Test
     fun parsesGainStrings() {
         assertEquals(-6.54f, ReplayGain.parseDb("-6.54 dB")!!, 0.001f)
         assertEquals(2f, ReplayGain.parseDb("+2.00 dB")!!, 0.001f)

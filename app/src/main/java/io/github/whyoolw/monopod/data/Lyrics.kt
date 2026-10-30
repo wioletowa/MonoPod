@@ -91,3 +91,67 @@ fun parseUslt(data: ByteArray): String? {
     if (i >= data.size) return null
     return String(data, i, data.size - i, charset).trimEnd('\u0000')
 }
+
+/**
+ * Synced lyrics from an ID3 SYLT frame: encoding byte, language, time format (2 = ms,
+ * 1 = MPEG frames, which we cannot turn into time), content type, a description, then
+ * text + 4-byte time pairs. Null when it holds nothing usable.
+ */
+fun parseSylt(data: ByteArray): Lyrics? {
+    if (data.size < 7 || data[4].toInt() != 2) return null
+    val enc = data[0].toInt()
+    val wide = enc == 1 || enc == 2
+    val charset = when (enc) {
+        0 -> Charsets.ISO_8859_1
+        1 -> Charsets.UTF_16
+        2 -> Charsets.UTF_16BE
+        else -> Charsets.UTF_8
+    }
+    /** End of the zero-terminated string starting at [from]: the index of its terminator. */
+    fun end(from: Int): Int {
+        var i = from
+        if (wide) { while (i + 1 < data.size && !(data[i].toInt() == 0 && data[i + 1].toInt() == 0)) i += 2 }
+        else while (i < data.size && data[i].toInt() != 0) i++
+        return i
+    }
+    val zero = if (wide) 2 else 1
+    var i = end(6) + zero
+    val entries = mutableListOf<LyricLine>()
+    var bom: ByteArray? = null
+    while (i < data.size) {
+        val e = end(i)
+        if (e + zero + 4 > data.size) break
+        var bytes = data.copyOfRange(i, e)
+        // UTF-16 with a BOM: later strings may leave it out and rely on the first one
+        if (enc == 1) {
+            if (bytes.size >= 2 && (bytes[0] == 0xFF.toByte() || bytes[0] == 0xFE.toByte())) bom = bytes.copyOfRange(0, 2)
+            else bom?.let { bytes = it + bytes }
+        }
+        val p = e + zero
+        val time = ((data[p].toLong() and 0xFF) shl 24) or ((data[p + 1].toLong() and 0xFF) shl 16) or
+            ((data[p + 2].toLong() and 0xFF) shl 8) or (data[p + 3].toLong() and 0xFF)
+        entries += LyricLine(time, String(bytes, charset))
+        i = p + 4
+    }
+    // As the ID3 spec has it, an entry is often a syllable, and one starting with a newline
+    // begins a line: "Strang" "ers" " in" "\nEx" "chang"... Without any newline, every entry is a line
+    val newLine = { s: String -> s.startsWith("\n") || s.startsWith("\r") }
+    val lines = if (entries.drop(1).none { newLine(it.text) }) {
+        entries.map { LyricLine(it.timeMs, it.text.trim()) }
+    } else {
+        val joined = mutableListOf<LyricLine>()
+        val text = StringBuilder()
+        var start: Long? = 0L
+        for ((n, entry) in entries.withIndex()) {
+            if (n == 0 || newLine(entry.text)) {
+                if (n > 0) joined += LyricLine(start, text.toString().trim())
+                text.clear()
+                start = entry.timeMs
+            }
+            text.append(entry.text.trimStart('\n', '\r'))
+        }
+        if (entries.isNotEmpty()) joined += LyricLine(start, text.toString().trim())
+        joined
+    }
+    return if (lines.any { it.text.isNotEmpty() }) Lyrics(lines.sortedBy { it.timeMs }) else null
+}

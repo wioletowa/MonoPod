@@ -2,6 +2,7 @@ package io.github.whyoolw.monopod.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.SystemClock
 import android.util.Log
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -123,7 +124,31 @@ class PlaybackService : MediaSessionService() {
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             store.savePosition(player)
+            waveFeedback(mediaItem, reason)
             topUpWave()
+        }
+
+        /** The wave song now playing and since when, to tell My Wave how it went. */
+        private var waveSong: String? = null
+        private var waveSongSince = 0L
+
+        /** My Wave learns from every song: played to the end, or skipped after a few seconds. */
+        private fun waveFeedback(next: MediaItem?, reason: Int) {
+            val now = SystemClock.elapsedRealtime()
+            val previous = waveSong
+            // The crossfade gets to the next song by a seek, but the song did play out
+            val finished = reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO || sound?.handingOver == true
+            val played = now - waveSongSince
+            val nextId = next?.mediaId?.takeIf { YandexMusic.isWave(it) }?.let { YandexMusic.trackId(it) }
+            waveSong = nextId
+            waveSongSince = now
+            if (previous == null && nextId == null) return
+            scope.launch(Dispatchers.IO) {
+                if (previous != null && previous != nextId) {
+                    yandex.waveFeedback(previous, if (finished) "trackFinished" else "skip", played)
+                }
+                if (nextId != null && nextId != previous) yandex.waveFeedback(nextId, "trackStarted")
+            }
         }
 
         /** My Wave never ends: two songs before the end, the next batch joins the queue. */

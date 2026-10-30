@@ -14,9 +14,15 @@ import io.github.whyoolw.monopod.data.StatsRepository
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.SideEffect
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.ScrollState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.rememberUpdatedState
+import kotlinx.coroutines.flow.filter
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
@@ -69,6 +75,7 @@ import io.github.whyoolw.monopod.ui.menu.coverPath
 import io.github.whyoolw.monopod.ui.menu.Page
 import io.github.whyoolw.monopod.ui.screen.Lcd
 import io.github.whyoolw.monopod.ui.screen.LocalLcdFont
+import io.github.whyoolw.monopod.ui.screen.LocalPixelScreen
 import kotlinx.coroutines.delay
 
 /** How long the volume bar stays up after the last click. */
@@ -90,23 +97,35 @@ class NowPlayingPage(override val title: String) : Page {
         private set
     private var lastTouch = 0L
 
-    /** Set by the view once it knows whether the current song has lyrics. */
-    var lyrics by mutableStateOf<Lyrics?>(null)
-        internal set
-    /** First visible line of plain (unsynced) lyrics, moved by the wheel. */
+    private var _lyrics by mutableStateOf<Lyrics?>(null)
+    /** Set by the view once it knows whether the current song has lyrics; another song's start at the top. */
+    var lyrics: Lyrics?
+        get() = _lyrics
+        internal set(v) {
+            if (v == _lyrics) return
+            _lyrics = v
+            lyricsScroll = 0
+        }
+    /** How far plain (unsynced) lyrics are scrolled, in wheel clicks. */
     var lyricsScroll by mutableIntStateOf(0)
         private set
+    /** The most clicks the lyrics on screen can scroll; the view measures it. */
+    var lyricsMaxScroll by mutableIntStateOf(0)
+        internal set
+
+    private fun scrollLyrics(steps: Int) {
+        lyricsScroll = (lyricsScroll + steps).coerceIn(0, lyricsMaxScroll.coerceAtLeast(0))
+    }
 
     /** The same wheel for any source: volume, scrubbing, the rating (own songs only), lyrics. */
-    fun scroll(steps: Int, source: NowSource, volume: Volume, stats: StatsRepository) {
+    fun scroll(steps: Int, source: NowSource, volume: Volume, stats: StatsRepository?) {
         val now = SystemClock.uptimeMillis()
         lastTouch = now
         val l = lyrics
         when {
             mode == Mode.Scrub -> source.seekBy(steps * maxOf(1000L, source.durationMs / 120))
-            mode == Mode.Rating -> source.uri?.let { stats.setRating(it, stats.rating(it) + steps) }
-            mode == Mode.Lyrics && l != null && !l.synced ->
-                lyricsScroll = (lyricsScroll + steps).coerceIn(0, (l.lines.size - 1).coerceAtLeast(0))
+            mode == Mode.Rating -> source.uri?.let { stats?.setRating(it, stats.rating(it) + steps) }
+            mode == Mode.Lyrics && l != null && !l.synced -> scrollLyrics(steps)
             else -> {
                 volume.step(steps)
                 volumeShownUntil = now + VOLUME_SHOWN_MS
@@ -137,9 +156,7 @@ class NowPlayingPage(override val title: String) : Page {
                     // Synced lyrics scroll themselves; the wheel stays on volume
                     playback.volume.step(steps)
                     volumeShownUntil = now + VOLUME_SHOWN_MS
-                } else {
-                    lyricsScroll = (lyricsScroll + steps).coerceIn(0, (l.lines.size - 1).coerceAtLeast(0))
-                }
+                } else scrollLyrics(steps)
             }
         }
     }
@@ -174,7 +191,7 @@ fun NowPlayingView(
     val context = LocalContext.current
     val uri = playback.mediaUri
     val lyrics by produceState(LyricsLoader.cached(uri), uri) {
-        value = uri?.let { LyricsLoader.load(context.applicationContext, it, lyricsFile(it)) }
+        value = uri?.let { LyricsLoader.load(context.applicationContext, it, lyricsFile(it), playback.songInfo) }
     }
     SideEffect {
         page.lyrics = lyrics
@@ -208,56 +225,43 @@ fun NowPlayingView(
     Column(modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp)) {
         val shownLyrics = lyrics
         if (page.mode == NowPlayingPage.Mode.Lyrics && shownLyrics != null) {
-            LyricsView(shownLyrics, position, page.lyricsScroll, Modifier.fillMaxWidth().weight(1f))
+            LyricsView(shownLyrics, position, page.lyricsScroll, { page.lyricsMaxScroll = it }, Modifier.fillMaxWidth().weight(1f))
         } else BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            // Squarish and tall screens (big and full screen layouts) stack the cover over the text
+            // Laid out like the Cover Flow playing screen: the cover on the left, the song at its
+            // right; a taller screen (big screen layout) centers the pair and gives it a bigger cover
             val tall = maxHeight > maxWidth * 0.75f
             // Material shows the cover bigger: no reflection to make room for
             val big = Lcd.material
-            val coverSize = if (tall) {
-                minOf(maxWidth * if (big) 0.86f else 0.72f, maxHeight * if (big) 0.66f else 0.58f)
-            } else {
-                minOf(maxHeight * if (big) 0.98f else 0.78f, maxWidth * if (big) 0.48f else 0.42f)
-            }
-            val info: @Composable (Alignment.Horizontal, TextAlign) -> Unit = { align, textAlign ->
-                Column(horizontalAlignment = align) {
-                    val small = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 13.sp, color = Lcd.text, textAlign = textAlign)
-                    BasicText(
-                        stringResource(R.string.queue_position, playback.queuePosition, playback.queueSize),
-                        style = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 11.sp, color = Lcd.dimText),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    BasicText(
-                        meta.title?.toString().orEmpty(),
-                        Modifier.basicMarquee(initialDelayMillis = 1500),
-                        style = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Lcd.text),
-                        maxLines = 1,
-                    )
-                    BasicText(
-                        meta.artist?.toString() ?: stringResource(R.string.unknown_artist),
-                        style = small, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                    BasicText(
-                        meta.albumTitle?.toString() ?: stringResource(R.string.unknown_album),
-                        style = small.copy(color = Lcd.dimText), maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-            if (tall) {
-                Column(
-                    Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                ) {
-                    Cover(uri?.let(coverFor) ?: meta.artworkUri?.coverPath(), coverSize)
-                    info(Alignment.CenterHorizontally, TextAlign.Center)
-                }
-            } else {
-                Row(Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) {
-                    Cover(uri?.let(coverFor) ?: meta.artworkUri?.coverPath(), coverSize)
-                    Spacer(Modifier.width(10.dp))
-                    Box(Modifier.weight(1f).height(coverSize), contentAlignment = Alignment.CenterStart) {
-                        info(Alignment.Start, TextAlign.Start)
+            val coverSize = if (tall) minOf(maxHeight * if (big) 0.92f else 0.78f, maxWidth * 0.5f)
+            else minOf(maxHeight * if (big) 0.98f else 0.78f, maxWidth * if (big) 0.48f else 0.42f)
+            Row(
+                Modifier.fillMaxWidth().align(if (tall) Alignment.CenterStart else Alignment.TopStart),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Cover(uri?.let(coverFor) ?: meta.artworkUri?.coverPath(), coverSize)
+                Spacer(Modifier.width(10.dp))
+                Box(Modifier.weight(1f).height(coverSize), contentAlignment = Alignment.CenterStart) {
+                    Column {
+                        val small = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 13.sp, color = Lcd.text)
+                        BasicText(
+                            stringResource(R.string.queue_position, playback.queuePosition, playback.queueSize),
+                            style = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 11.sp, color = Lcd.dimText),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        BasicText(
+                            meta.title?.toString().orEmpty(),
+                            Modifier.basicMarquee(initialDelayMillis = 1500),
+                            style = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Lcd.text),
+                            maxLines = 1,
+                        )
+                        BasicText(
+                            meta.artist?.toString() ?: stringResource(R.string.unknown_artist),
+                            style = small, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
+                        BasicText(
+                            meta.albumTitle?.toString() ?: stringResource(R.string.unknown_album),
+                            style = small.copy(color = Lcd.dimText), maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }
@@ -315,7 +319,9 @@ internal fun ProgressBar(positionMs: Long, durationMs: Long, scrubbing: Boolean,
     val lcd = Lcd
     val fraction = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else 0f
     Column(Modifier.fillMaxWidth()) {
-        if (lcd.material) {
+        if (LocalPixelScreen.current) {
+            PixelBar(fraction, scrubbing)
+        } else if (lcd.material) {
             WavyProgress(fraction, playing, Modifier.fillMaxWidth().height(14.dp), thumb = scrubbing)
         } else Canvas(Modifier.fillMaxWidth().height(9.dp)) {
             val r = CornerRadius(2f)
@@ -348,7 +354,9 @@ internal fun VolumeBar(fraction: Float) {
     val lcd = Lcd
     Column(Modifier.fillMaxWidth()) {
         // Same place and size as the progress bar it stands in for
-        if (lcd.material) {
+        if (LocalPixelScreen.current) {
+            PixelBar(fraction, thumb = false)
+        } else if (lcd.material) {
             WavyProgress(fraction, playing = false, Modifier.fillMaxWidth().height(14.dp))
         } else Canvas(Modifier.fillMaxWidth().height(9.dp)) {
             val r = CornerRadius(2f)
@@ -364,6 +372,27 @@ internal fun VolumeBar(fraction: Float) {
             Speaker(Modifier.size(13.dp), waves = 0)
             Spacer(Modifier.weight(1f))
             Speaker(Modifier.size(13.dp), waves = 2)
+        }
+    }
+}
+
+/** A bar of square blocks for the pixel screens: filled up to [fraction], a tall block marks the spot while scrubbing. */
+@Composable
+private fun PixelBar(fraction: Float, thumb: Boolean) {
+    val lcd = Lcd
+    Canvas(Modifier.fillMaxWidth().height(12.dp)) {
+        val block = 3.dp.toPx()
+        val gap = 1.dp.toPx()
+        val count = ((size.width + gap) / (block + gap)).toInt().coerceAtLeast(1)
+        val step = (size.width + gap) / count
+        val filled = (fraction * count).toInt()
+        val top = (size.height - block * 2) / 2
+        for (i in 0 until count) {
+            val x = i * step
+            val here = thumb && i == filled.coerceAtMost(count - 1)
+            if (here) drawRect(lcd.text, Offset(x, 0f), Size(step - gap, size.height))
+            else if (i < filled) drawRect(lcd.text, Offset(x, top), Size(step - gap, block * 2))
+            else drawRect(lcd.dimText.copy(alpha = 0.45f), Offset(x, top + block * 0.5f), Size(step - gap, block))
         }
     }
 }
@@ -391,19 +420,52 @@ private fun Speaker(modifier: Modifier, waves: Int) {
 }
 
 
+/** Pixels one wheel click scrolls plain lyrics: about a line. */
+private val LYRICS_STEP = 22.dp
+
+/**
+ * Lyrics over the whole song area. Synced lyrics keep the sung line in the middle of the
+ * screen; plain lyrics scroll with the wheel, a line per click, however long the lines wrap.
+ */
 @Composable
-internal fun LyricsView(lyrics: Lyrics, positionMs: Long, scroll: Int, modifier: Modifier) {
-    val state = rememberLazyListState()
+internal fun LyricsView(lyrics: Lyrics, positionMs: Long, scroll: Int, onMaxScroll: (Int) -> Unit, modifier: Modifier) {
+    // A new song's lyrics start from the top
+    val state = remember(lyrics) { ScrollState(0) }
     val current = lyrics.lineAt(positionMs)
-    // Synced: keep the sung line third from the top; plain: follow the wheel
-    val target = if (lyrics.synced) (current - 2).coerceAtLeast(0) else scroll
-    LaunchedEffect(target) { state.animateScrollToItem(target) }
-    LazyColumn(modifier.padding(bottom = 6.dp), state = state, userScrollEnabled = false) {
-        itemsIndexed(lyrics.lines) { i, line ->
+    // Where each line sits in the column, for centering the sung one
+    val tops = remember(lyrics) { IntArray(lyrics.lines.size) }
+    val heights = remember(lyrics) { IntArray(lyrics.lines.size) }
+    val density = LocalDensity.current
+    val step = with(density) { LYRICS_STEP.roundToPx() }
+    var viewport by remember { mutableIntStateOf(0) }
+    if (lyrics.synced) {
+        LaunchedEffect(state, current, viewport) {
+            val i = current.coerceAtLeast(0)
+            if (i < tops.size && viewport > 0) state.animateScrollTo(tops[i] + heights[i] / 2 - viewport / 2)
+        }
+    } else {
+        LaunchedEffect(state, scroll) { state.animateScrollTo(scroll * step) }
+        // The wheel stops at the last line, once the lyrics are measured (until then the most is unknown)
+        val report by rememberUpdatedState(onMaxScroll)
+        LaunchedEffect(state, step) {
+            snapshotFlow { state.maxValue }.filter { it != Int.MAX_VALUE }.collect { report((it + step - 1) / step) }
+        }
+    }
+    Column(
+        modifier.padding(bottom = 6.dp).clipToBounds()
+            .onSizeChanged { viewport = it.height }
+            .verticalScroll(state, enabled = false),
+    ) {
+        // Synced: room above the first line and below the last, so either can sit in the middle
+        if (lyrics.synced) Spacer(Modifier.height(with(density) { (viewport / 2).toDp() }))
+        lyrics.lines.forEachIndexed { i, line ->
             val now = lyrics.synced && i == current
             BasicText(
                 line.text.ifEmpty { "♪" },
-                Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                Modifier.fillMaxWidth().padding(vertical = 2.dp).onGloballyPositioned {
+                    tops[i] = it.positionInParent().y.toInt()
+                    heights[i] = it.size.height
+                },
                 style = TextStyle(
                     fontFamily = LocalLcdFont.current,
                     fontSize = if (now) 15.sp else 14.sp,
@@ -417,6 +479,7 @@ internal fun LyricsView(lyrics: Lyrics, positionMs: Long, scroll: Int, modifier:
                 ),
             )
         }
+        if (lyrics.synced) Spacer(Modifier.height(with(density) { (viewport / 2).toDp() }))
     }
 }
 

@@ -39,7 +39,7 @@
     <string name="theme_red">Red</string>
 
     <string name="coming_in_stage">Coming in stage %1$d</string>
-    <string name="about_text">Monopod 1.7.0\n\nPixel font: Tiny5 (SIL OFL 1.1)</string>
+    <string name="about_text">Monopod\n\nPixel font: Tiny5 (SIL OFL 1.1)</string>
 
     <string name="all_songs">All Songs</string>
     <string name="unknown_artist">Unknown Artist</string>
@@ -70,7 +70,7 @@
     <string name="effect_off">Off</string>
     <string name="effect_lcd">Color LCD</string>
     <string name="effect_crt">CRT</string>
-    <string name="effect_mono">Mono LCD</string>
+    <string name="effect_mono">iPod 1G</string>
     <string name="font_classic">Classic</string>
     <string name="font_pixel">Pixel</string>
     <string name="font_mono">Mono</string>
@@ -211,4 +211,17 @@
     <string name="spotify_setup_bad_id">A Client ID is 32 letters and digits (0–9, a–f)</string>
     <string name="spotify_setup_copy">Copy</string>
     <string name="spotify_setup_copied">Copied</string>
+    <string name="effect_gameboy">Green LCD</string>
+    <string name="backlight_timer">Backlight Timer</string>
+    <string name="always_on">Always On</string>
+    <string name="about_songs">Songs</string>
+    <string name="about_albums">Albums</string>
+    <string name="about_artists">Artists</string>
+    <string name="about_time">Music</string>
+    <string name="hours_minutes">%1$d h %2$d min</string>
+    <string name="about_capacity">Capacity</string>
+    <string name="about_available">Available</string>
+    <string name="about_version">Version</string>
+    <string name="about_credits">Credits</string>
+    <string name="online_lyrics">Lyrics from LRCLIB</string>
 </resources>

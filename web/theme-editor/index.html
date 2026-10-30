@@ -178,7 +178,7 @@ const T = {
       ipod: "iPod", material: "Material", cover: "из обложки", system: "из системы", multicolor: "разноцветный",
       blue: "синий", purple: "фиолетовый", pink: "розовый", red: "красный", orange: "оранжевый", yellow: "жёлтый",
       green: "зелёный", graphite: "графит", classic: "классика", big: "большой экран",
-      off: "выкл", lcd: "цветной LCD", crt: "ЭЛТ", mono: "монохром", on: "вкл", pixel: "пиксельный",
+      off: "выкл", lcd: "цветной LCD", crt: "ЭЛТ", mono: "iPod 1G", gameboy: "зелёный LCD", on: "вкл", pixel: "пиксельный",
       true: "да", false: "нет" },
     menu: ["Музыка", "Перемешать песни", "Spotify", "Яндекс Музыка", "Настройки"],
     errName: "Впишите название.", bad: "Файл не похож на тему Monopod: ",
@@ -203,7 +203,7 @@ const T = {
       ipod: "iPod", material: "Material", cover: "from cover", system: "from wallpaper", multicolor: "multicolor",
       blue: "blue", purple: "purple", pink: "pink", red: "red", orange: "orange", yellow: "yellow",
       green: "green", graphite: "graphite", classic: "classic", big: "big screen",
-      off: "off", lcd: "color LCD", crt: "CRT", mono: "mono", on: "on", pixel: "pixel",
+      off: "off", lcd: "color LCD", crt: "CRT", mono: "iPod 1G", gameboy: "green LCD", on: "on", pixel: "pixel",
       true: "yes", false: "no" },
     menu: ["Music", "Shuffle Songs", "Spotify", "Yandex Music", "Settings"],
     errName: "Enter a name.", bad: "This does not look like a Monopod theme: ",
@@ -230,7 +230,7 @@ const SETTINGS = [
   ["style", ["ipod", "material"]],
   ["colors", ["cover", "multicolor", "blue", "purple", "pink", "red", "orange", "yellow", "green", "graphite", "system"]],
   ["layout", ["classic", "big"]],
-  ["effect", ["off", "lcd", "crt", "mono"]],
+  ["effect", ["off", "lcd", "crt", "mono", "gameboy"]],
   ["effect-strength", ["0%", "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%"]],
   ["dark-screen", ["off", "on", "system"]],
   ["font", ["classic", "pixel", "mono"]],
@@ -423,6 +423,10 @@ function render() {
   if (s.effect === "mono") {
     lcd.style.filter = `grayscale(${strength}) sepia(${0.5 * strength}) hue-rotate(${60 * strength}deg)`;
     fx.style.background = `repeating-linear-gradient(90deg, rgba(0,0,0,${0.1 * strength}) 0 1px, transparent 1px 3px), repeating-linear-gradient(rgba(0,0,0,${0.1 * strength}) 0 1px, transparent 1px 3px)`;
+  }
+  if (s.effect === "gameboy") {
+    lcd.style.filter = "grayscale(1) sepia(1) hue-rotate(40deg) saturate(2.2) brightness(0.8) contrast(1.3)";
+    fx.style.background = `repeating-linear-gradient(90deg, rgba(0,0,0,0.15) 0 1px, transparent 1px 4px), repeating-linear-gradient(rgba(0,0,0,0.15) 0 1px, transparent 1px 4px)`;
   }
 
   // Wheel

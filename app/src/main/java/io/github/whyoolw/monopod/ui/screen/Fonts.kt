@@ -19,3 +19,6 @@ fun ScreenFont.family(): FontFamily = when (this) {
     ScreenFont.Pixel -> Tiny5
     ScreenFont.Mono -> FontFamily.Monospace
 }
+
+/** Whether this is the pixel font, so icons next to it can be drawn in pixels too. */
+val FontFamily.isPixel: Boolean get() = this == Tiny5

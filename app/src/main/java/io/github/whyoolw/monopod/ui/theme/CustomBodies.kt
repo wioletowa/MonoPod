@@ -137,7 +137,7 @@ object CustomBodies {
         "colors" to setOf("cover", "system", "multicolor", "blue", "purple", "pink", "red", "orange", "yellow", "green", "graphite"),
         // "full" is the dropped full-screen layout; it now means big
         "layout" to setOf("classic", "big", "full"),
-        "effect" to setOf("off", "lcd", "crt", "mono"),
+        "effect" to setOf("off", "lcd", "crt", "mono", "gameboy"),
         "effect-strength" to emptySet(),
         "dark-screen" to setOf("off", "on", "system"),
         "font" to setOf("classic", "pixel", "mono"),

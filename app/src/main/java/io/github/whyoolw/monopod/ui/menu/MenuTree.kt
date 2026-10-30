@@ -35,6 +35,9 @@ import io.github.whyoolw.monopod.ui.theme.label
 import io.github.whyoolw.monopod.ui.presets.PresetStore
 import io.github.whyoolw.monopod.ui.presets.PresetsPage
 
+/** Backlight timer choices, seconds; 0 keeps the screen lit. */
+val BACKLIGHT_OPTIONS = listOf(0, 5, 10, 20, 30, 60)
+
 /** The whole menu tree. [pickFolder] opens the system folder picker. */
 fun rootPage(
     res: Resources,
@@ -129,20 +132,22 @@ fun rootPage(
     val appearance = ListPage(s(R.string.settings_appearance)) {
         val material = app.uiStyle == UiStyle.Material
         listOfNotNull(
+            // Ready-made looks, then the look itself (style, body, colors, font), then the
+            // screen (layout, effect), then the extras
             MenuItem(s(R.string.presets)) { PresetsPage(s(R.string.presets), presets) },
             MenuItem(s(R.string.style), value = { s(app.uiStyle.label) }) { uiStyle },
+            MenuItem(s(R.string.settings_body), value = { app.theme.label(res) }) { body }.takeIf { !material },
             if (material) MenuItem(s(R.string.material_colors), value = { s(app.materialColors.label) }) { materialColors }
             else MenuItem(s(R.string.material_colors), value = { s(app.ipodAccent.label) }) { ipodAccent },
-            MenuItem(s(R.string.settings_body), value = { app.theme.label(res) }) { body }.takeIf { !material },
+            MenuItem(s(R.string.settings_font), value = { s(app.font.label) }) { font }.takeIf { !material },
+            MenuItem(s(R.string.dark_screen), value = { s(app.darkScreen.label) }) { darkScreen },
             MenuItem(s(R.string.settings_layout), value = { s(app.layout.label) }) { layout },
             MenuItem(s(R.string.settings_screen_effect), value = { s(app.effect.label) }) { effect },
             MenuItem(s(R.string.settings_effect_intensity), value = { "${app.intensity * 10}%" }) { intensity },
-            MenuItem(s(R.string.dark_screen), value = { s(app.darkScreen.label) }) { darkScreen },
-            MenuItem(s(R.string.stickers), opensPage = false) { openStickers(); null },
-            MenuItem(s(R.string.settings_font), value = { s(app.font.label) }) { font }.takeIf { !material },
             MenuItem(s(R.string.hide_status_bar), opensPage = false, value = { onOff(app.hideStatusBar) }) {
                 app.hideStatusBar = !app.hideStatusBar; null
             },
+            MenuItem(s(R.string.stickers), opensPage = false) { openStickers(); null },
         )
     }
     val clicker = ListPage(
@@ -229,6 +234,31 @@ fun rootPage(
             checked = { app.crossfadeSeconds == sec },
         ) { app.crossfadeSeconds = sec; null }
     })
+    val backlight = ListPage(s(R.string.backlight_timer), BACKLIGHT_OPTIONS.map { sec ->
+        MenuItem(
+            if (sec == 0) s(R.string.always_on) else res.getString(R.string.seconds, sec), opensPage = false,
+            checked = { app.backlightSeconds == sec },
+        ) { app.backlightSeconds = sec; null }
+    })
+    fun backlightValue() = if (app.backlightSeconds == 0) s(R.string.always_on) else res.getString(R.string.seconds, app.backlightSeconds)
+    // About, the iPod way: what is on it, how much room is left, the version
+    val about = ListPage(s(R.string.settings_about)) {
+        val snap = library.snapshot
+        val minutes = snap.songs.sumOf { it.durationMs } / 60_000
+        val storage = android.os.StatFs(android.os.Environment.getExternalStorageDirectory().path)
+        fun size(bytes: Long) = android.text.format.Formatter.formatShortFileSize(app.context, bytes)
+        fun row(label: Int, value: String) = MenuItem(s(label), opensPage = false, value = { value }) { null }
+        listOf(
+            row(R.string.about_songs, "%,d".format(snap.songs.size).replace(',', ' ')),
+            row(R.string.about_albums, "%,d".format(snap.albums.size).replace(',', ' ')),
+            row(R.string.about_artists, "%,d".format(snap.songs.mapNotNull { it.albumArtist ?: it.artist }.distinct().size).replace(',', ' ')),
+            row(R.string.about_time, if (minutes < 60) res.getString(R.string.minutes, minutes.toInt()) else res.getString(R.string.hours_minutes, minutes / 60, minutes % 60)),
+            row(R.string.about_capacity, size(storage.totalBytes)),
+            row(R.string.about_available, size(storage.availableBytes)),
+            row(R.string.about_version, io.github.whyoolw.monopod.BuildConfig.VERSION_NAME),
+            MenuItem(s(R.string.about_credits)) { MessagePage(s(R.string.about_credits), s(R.string.about_text)) },
+        )
+    }
     val soundCheck = choice(R.string.sound_check, SoundCheck.entries, { it.label }, { app.soundCheck }) { app.soundCheck = it }
     val sound = ListPage(
         s(R.string.settings_sound),
@@ -279,21 +309,24 @@ fun rootPage(
             }
             app.yandexEnabled = !app.yandexEnabled; null
         },
+        // Song name, artist and length go to lrclib.net, so it can be switched off
+        MenuItem(s(R.string.online_lyrics), opensPage = false, checked = { app.onlineLyrics }) {
+            app.onlineLyrics = !app.onlineLyrics; null
+        },
     ))
     val developer = ListPage(s(R.string.dev_mode)) {
         listOf(
+            // Library and services, then the screen, the wheel, the haptics, and the diagnostics last
             MenuItem(s(R.string.online_music)) { online },
-            MenuItem(s(R.string.dev_last_crash)) {
-                val file = java.io.File(app.filesDir, Monopod.CRASH_FILE)
-                val text = file.takeIf { it.exists() }?.readText()?.lines()?.take(14)?.joinToString("\n") ?: s(R.string.dev_no_crash)
-                MessagePage(s(R.string.dev_last_crash), text)
-            },
             MenuItem(s(R.string.dev_merge_albums), opensPage = false, value = { onOff(app.mergeAlbums) }) {
                 app.mergeAlbums = !app.mergeAlbums
                 library.rebuild(); null
             },
             slider(R.string.settings_effect_intensity, 100, { app.intensity }, { app.intensity = it }, ::percent),
             slider(R.string.dev_crt_speed, 50, { app.crtSpeed }, { app.crtSpeed = it }, ::percent),
+            slider(R.string.dev_wheel_degrees, 40, { app.wheelDegrees }, { app.wheelDegrees = it }) { "$it°" },
+            MenuItem(s(R.string.dev_accel), value = { s(accelLabels[app.accelLevel]) }) { accelPage },
+            slider(R.string.dev_click_volume, 10, { app.clickVolume }, { app.clickVolume = it }, ::percent),
             slider(R.string.haptic_strength, 10, { app.hapticStrength }, { app.hapticStrength = it }, ::percent),
             MenuItem(s(R.string.dev_haptic_mode), value = { s(hapticModeLabels.getValue(app.hapticMode)) }) { hapticModePage },
             slider(R.string.dev_pulse, 60, { app.pulseMs }, { app.pulseMs = it }) { res.getString(R.string.ms, it) },
@@ -304,18 +337,18 @@ fun rootPage(
             MenuItem(s(R.string.dev_motor_amplitude), opensPage = false, value = { yesNo(feedback.supportsAmplitude) }) { null },
             MenuItem(s(R.string.dev_motor_primitives), opensPage = false, value = { yesNo(feedback.supportsPrimitives) }) { null },
             MenuItem(s(R.string.dev_motor_used), opensPage = false, value = { s(hapticModeLabels.getValue(feedback.effectiveMode)) }) { null },
-            slider(R.string.dev_wheel_degrees, 40, { app.wheelDegrees }, { app.wheelDegrees = it }) { "$it°" },
-            MenuItem(s(R.string.dev_accel), value = { s(accelLabels[app.accelLevel]) }) { accelPage },
-            slider(R.string.dev_click_volume, 10, { app.clickVolume }, { app.clickVolume = it }, ::percent),
+            MenuItem(s(R.string.dev_last_crash)) {
+                val file = java.io.File(app.filesDir, Monopod.CRASH_FILE)
+                val text = file.takeIf { it.exists() }?.readText()?.lines()?.take(14)?.joinToString("\n") ?: s(R.string.dev_no_crash)
+                MessagePage(s(R.string.dev_last_crash), text)
+            },
             MenuItem(s(R.string.dev_reset), opensPage = false) { app.resetDeveloperSettings(); null },
         )
     }
     val settings = ListPage(
         s(R.string.menu_settings),
         listOf(
-            MenuItem(s(R.string.settings_library)) { folders },
-            MenuItem(s(R.string.settings_appearance)) { appearance },
-            MenuItem(s(R.string.settings_clicker)) { clicker },
+            // Playing first, then sound, then looks and the wheel, then the library
             MenuItem(
                 s(R.string.settings_shuffle), opensPage = false,
                 value = { s(if (playback.shuffle) R.string.shuffle_songs else R.string.off) },
@@ -332,10 +365,14 @@ fun rootPage(
                     )
                 },
             ) { playback.cycleRepeat(); null },
+            MenuItem(s(R.string.settings_sleep), value = { sleepValue() }) { sleep },
             MenuItem(s(R.string.settings_eq), value = { eqTitle() }) { eq },
             MenuItem(s(R.string.settings_sound)) { sound },
-            MenuItem(s(R.string.settings_sleep), value = { sleepValue() }) { sleep },
-            MenuItem(s(R.string.settings_about)) { MessagePage(s(R.string.settings_about), s(R.string.about_text)) },
+            MenuItem(s(R.string.settings_appearance)) { appearance },
+            MenuItem(s(R.string.backlight_timer), value = { backlightValue() }) { backlight },
+            MenuItem(s(R.string.settings_clicker)) { clicker },
+            MenuItem(s(R.string.settings_library)) { folders },
+            MenuItem(s(R.string.settings_about)) { about },
             MenuItem(s(R.string.dev_mode)) { developer },
         ),
     )

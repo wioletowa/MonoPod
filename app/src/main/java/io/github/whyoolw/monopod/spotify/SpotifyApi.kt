@@ -154,6 +154,22 @@ class SpotifyApi(private val auth: SpotifyAuth) {
         }
     }
 
+    /** Pauses whatever device Spotify plays on; 403 when it already is paused. */
+    fun pausePlayback() {
+        val token = auth.accessToken() ?: throw Failure(401)
+        val c = URL("https://api.spotify.com/v1/me/player/pause").openConnection() as HttpURLConnection
+        c.requestMethod = "PUT"
+        c.setRequestProperty("Authorization", "Bearer $token")
+        c.setFixedLengthStreamingMode(0)
+        c.doOutput = true
+        try {
+            c.outputStream.close()
+            if (c.responseCode !in 200..299 && c.responseCode != 403) throw Failure(c.responseCode)
+        } finally {
+            c.disconnect()
+        }
+    }
+
     private fun get(url: String): JSONObject {
         val token = auth.accessToken() ?: throw Failure(401)
         val c = URL(url).openConnection() as HttpURLConnection

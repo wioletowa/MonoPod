@@ -22,6 +22,10 @@ private const val SLEEP_FADE_MS = 30_000L
 /** Volume factor with [leftMs] to go on the sleep timer: full, then a linear fade over the last [SLEEP_FADE_MS]. */
 internal fun sleepFade(leftMs: Long): Float = (leftMs.toFloat() / SLEEP_FADE_MS).coerceIn(0f, 1f)
 
+/** Equal-power crossfade: the two songs together stay as loud as one, with no dip halfway. */
+internal fun fadeIn(t: Float): Float = kotlin.math.sin(t.coerceIn(0f, 1f) * Math.PI.toFloat() / 2)
+internal fun fadeOut(t: Float): Float = kotlin.math.cos(t.coerceIn(0f, 1f) * Math.PI.toFloat() / 2)
+
 /** The crossfade player gets the outgoing song ready this long before the fade starts. */
 private const val ARM_AHEAD_MS = 3_000L
 
@@ -52,7 +56,21 @@ class SoundController(context: Context, private val main: ExoPlayer) :
     private var tailVolume = 1f
 
     private var armedIndex = C.INDEX_UNSET
+    /** When the outgoing song started fading out (0 = no crossfade running). */
     private var fadeStart = 0L
+    /**
+     * When the incoming song really started playing. An online song can take seconds to load:
+     * its fade-in waits for it, or it would come in already at full volume.
+     */
+    private var fadeInStart = 0L
+    /**
+     * True while the crossfade moves the main player to the next song. That is a seek to the
+     * player, but the song before did play to its end (My Wave is told it finished).
+     */
+    var handingOver = false
+        private set
+    /** The sleep timer last seen, to tell "ran out" from "switched off". */
+    private var sleepUntil = 0L
 
     private var ticking = false
     private val tick = object : Runnable {
@@ -109,6 +127,9 @@ class SoundController(context: Context, private val main: ExoPlayer) :
             ),
         )
         val sleep = prefs.getLong(Prefs.SLEEP_UNTIL, 0L)
+        // The alarm cleared a timer that ran out (while Spotify played, say): pause here as well
+        if (sleep == 0L && sleepUntil > 0L && sleepUntil <= System.currentTimeMillis() + 1000) main.pause()
+        sleepUntil = sleep
         main.pauseAtEndOfMediaItems = sleep == Prefs.SLEEP_END_OF_SONG
         if (sleep > 0) Log.i(TAG, "sleep timer: pause in ${(sleep - System.currentTimeMillis()) / 1000}s")
         if (crossfadeMs == 0L) disarm()
@@ -145,10 +166,17 @@ class SoundController(context: Context, private val main: ExoPlayer) :
     private fun step() {
         val sleepFactor = sleepFactor()
         if (fadeStart != 0L) {
-            val t = ((SystemClock.uptimeMillis() - fadeStart).toFloat() / crossfadeMs).coerceIn(0f, 1f)
-            main.volume = mainGain.volume(soundCheck) * t * sleepFactor
-            tail.volume = tailVolume * (1f - t) * sleepFactor
-            if (t >= 1f) finishFade()
+            val now = SystemClock.uptimeMillis()
+            if (fadeInStart == 0L && main.isPlaying) fadeInStart = now
+            val out = (now - fadeStart).toFloat() / crossfadeMs
+            val `in` = if (fadeInStart == 0L) 0f else (now - fadeInStart).toFloat() / crossfadeMs
+            main.volume = mainGain.volume(soundCheck) * fadeIn(`in`) * sleepFactor
+            tail.volume = tailVolume * fadeOut(out) * sleepFactor
+            if (out >= 1f && tail.isPlaying) tail.stop()
+            // The next song never came (it failed to load, or the queue ended): stop waiting for it
+            val stuck = fadeInStart == 0L && out >= 1f &&
+                (main.playbackState == Player.STATE_IDLE || main.playbackState == Player.STATE_ENDED || out >= GIVE_UP)
+            if (`in` >= 1f || stuck) finishFade()
             return
         }
         main.volume = mainGain.volume(soundCheck) * sleepFactor
@@ -189,20 +217,32 @@ class SoundController(context: Context, private val main: ExoPlayer) :
     }
 
     private fun startFade(position: Long) {
+        // A stream the tail cannot seek in would start from its beginning: plain gapless then
+        if (!tail.isCurrentMediaItemSeekable || tail.playbackState != Player.STATE_READY) {
+            Log.i(TAG, "crossfade: tail not ready, skipped")
+            disarm(); return
+        }
         if (kotlin.math.abs(tail.currentPosition - position) > 300) tail.seekTo(position)
         tailVolume = mainGain.volume(soundCheck)
         tail.volume = tailVolume * sleepFactor()
         tail.play()
         main.volume = 0f
-        main.seekToNextMediaItem()
+        handingOver = true
+        try {
+            main.seekToNextMediaItem()
+        } finally {
+            handingOver = false
+        }
         armedIndex = C.INDEX_UNSET
         fadeStart = SystemClock.uptimeMillis()
+        fadeInStart = 0L
         Log.i(TAG, "crossfade: ${crossfadeMs}ms from $position")
     }
 
     private fun finishFade() {
         if (fadeStart == 0L) return
         fadeStart = 0L
+        fadeInStart = 0L
         tail.stop()
         tail.clearMediaItems()
         main.volume = mainGain.volume(soundCheck)
@@ -220,6 +260,8 @@ class SoundController(context: Context, private val main: ExoPlayer) :
 
     private companion object {
         const val TAG = "SoundController"
+        /** Crossfade lengths to wait for a slow next song before giving up on fading it in. */
+        const val GIVE_UP = 4f
         val WATCHED = setOf(Prefs.CROSSFADE_SECONDS, Prefs.SOUND_CHECK, Prefs.EQ_PRESET, Prefs.EQ_CUSTOM, Prefs.EQ_USER, Prefs.SLEEP_UNTIL)
     }
 }

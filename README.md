@@ -14,7 +14,7 @@ An iPod Classic–style music player for Android, driven entirely by the click w
 
 **Playing**
 - Now Playing: the wheel is volume; the center button cycles scrubbing, rating and lyrics.
-- Lyrics from `.lrc` files (UTF-8 or Windows-1251) or tags; synced lyrics follow the song.
+- Lyrics from `.lrc` files (UTF-8 or Windows-1251) or tags (including synced SYLT); synced lyrics follow the song, long ones scroll with the wheel. Songs without lyrics, and Spotify, get them from [LRCLIB](https://lrclib.net) (song name, artist and length are sent there; it can be switched off).
 - Cover Flow: 3D covers with reflections; the cover spins out to an iPod nano–style playing screen. Turn the phone for full-screen Cover Flow.
 - Sound: gapless, crossfade, ReplayGain, iPod EQ presets plus your own, sleep timer.
 - Notification, lock screen, headset and Bluetooth buttons.
@@ -26,7 +26,7 @@ An iPod Classic–style music player for Android, driven entirely by the click w
 
 **Looks**
 - iPod or Material style; Material takes its colors from the album cover or the wallpaper.
-- Bodies, accent colors like macOS, screen effects (color LCD, CRT, monochrome), two layouts (Classic and Big Screen), three fonts, dark screen.
+- Bodies, accent colors like macOS, screen effects (color LCD, CRT, iPod 1G, green LCD), a backlight timer, two layouts (Classic and Big Screen), three fonts, dark screen.
 - **Custom bodies from theme files**: a CSS-like file (or a `.zip` with body and main-menu pictures). Settings → Appearance → Body → Download Template / + Add. The template, with every field explained in English and Russian, is [`app/src/main/assets/monopod-theme-template.css`](app/src/main/assets/monopod-theme-template.css). Or build one visually in the theme editor, [`web/theme-editor/index.html`](web/theme-editor/index.html): open it in a browser, pick colors and pictures with a live preview, and download the `.css` or `.zip`.
 - Stickers on the body, and six look presets (Appearance → Presets) that remember settings and stickers.
 

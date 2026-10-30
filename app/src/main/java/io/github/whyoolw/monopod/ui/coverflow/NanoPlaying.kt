@@ -99,7 +99,13 @@ fun NanoPlaying(
     val context = LocalContext.current
     val uri = source.uri
     val lyrics by produceState(LyricsLoader.cached(uri), uri, source.local) {
-        value = if (source.local && uri != null) LyricsLoader.load(context.applicationContext, uri, lyricsFile(uri)) else null
+        // Spotify songs have no lyrics of their own: LRCLIB finds them by name
+        value = uri?.let {
+            LyricsLoader.load(
+                context.applicationContext, it, if (source.local) lyricsFile(it) else null,
+                source.info,
+            )
+        }
     }
     SideEffect {
         modes.lyrics = lyrics
@@ -122,7 +128,11 @@ fun NanoPlaying(
     val font = LocalLcdFont.current
     val background = if (tilt == 0f) Lcd.background else Color.Transparent
     Column(Modifier.fillMaxSize().background(background).padding(horizontal = 10.dp, vertical = 8.dp)) {
-        AnimatedContent(
+        val shownLyrics = lyrics
+        if (modes.mode == NowPlayingPage.Mode.Lyrics && shownLyrics != null) {
+            // The lyrics take the whole screen, the cover makes way for them
+            LyricsView(shownLyrics, position, modes.lyricsScroll, { modes.lyricsMaxScroll = it }, Modifier.fillMaxWidth().weight(1f).graphicsLayer { alpha = contentAlpha })
+        } else AnimatedContent(
             targetState = Shown(uri, source.queuePosition, source.title, source.artist, source.album, source.cover),
             modifier = Modifier.fillMaxWidth().weight(1f),
             transitionSpec = {
@@ -151,11 +161,8 @@ fun NanoPlaying(
                         NanoCover(shown.cover, shown.album, cover, tilt, reflect, onCoverPlaced)
                     }
                     Spacer(Modifier.width(10.dp))
-                    val shownLyrics = lyrics
                     Box(Modifier.weight(1f).height(cover).graphicsLayer { alpha = contentAlpha }, contentAlignment = Alignment.CenterStart) {
-                        if (modes.mode == NowPlayingPage.Mode.Lyrics && shownLyrics != null) {
-                            LyricsView(shownLyrics, position, modes.lyricsScroll, Modifier.fillMaxSize())
-                        } else Column {
+                        Column {
                             // From the shown song, so the card sliding out keeps its own text
                             BasicText(
                                 shown.title.orEmpty(),

@@ -50,4 +50,26 @@ class LyricsTest {
             "Hi".toByteArray(Charsets.UTF_16)
         assertEquals("Hi", parseUslt(utf16))
     }
+
+    @Test
+    fun readsSyltFrames() {
+        fun be(v: Int) = byteArrayOf((v shr 24).toByte(), (v shr 16).toByte(), (v shr 8).toByte(), v.toByte())
+        // UTF-8, "eng", milliseconds, lyrics, empty description, then text + time pairs
+        val data = byteArrayOf(3) + "eng".toByteArray() + byteArrayOf(2, 1, 0) +
+            "Second".toByteArray() + byteArrayOf(0) + be(5000) +
+            "First".toByteArray() + byteArrayOf(0) + be(1200)
+        val l = parseSylt(data)!!
+        assertTrue(l.synced)
+        assertEquals(listOf("First", "Second"), l.lines.map { it.text })
+        assertEquals(1200L, l.lines[0].timeMs)
+        // Syllables, as in the ID3 spec: a leading newline starts the next line
+        val syllables = byteArrayOf(3) + "eng".toByteArray() + byteArrayOf(2, 1, 0) +
+            listOf("Strang" to 100, "ers" to 300, " in" to 500, " the night" to 700, "\nEx" to 2000, "chang" to 2300, "ing" to 2600)
+                .fold(ByteArray(0)) { acc, (t, ms) -> acc + t.toByteArray() + byteArrayOf(0) + be(ms) }
+        val s = parseSylt(syllables)!!
+        assertEquals(listOf("Strangers in the night", "Exchanging"), s.lines.map { it.text })
+        assertEquals(listOf(100L, 2000L), s.lines.map { it.timeMs })
+        // MPEG frame timestamps cannot be turned into time
+        assertNull(parseSylt(byteArrayOf(3) + "eng".toByteArray() + byteArrayOf(1, 1, 0) + "x".toByteArray() + byteArrayOf(0) + be(10)))
+    }
 }

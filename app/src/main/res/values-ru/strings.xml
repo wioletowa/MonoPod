@@ -37,7 +37,7 @@
     <string name="theme_red">Красный</string>
 
     <string name="coming_in_stage">Появится на этапе %1$d</string>
-    <string name="about_text">Monopod 1.7.0\n\nПиксельный шрифт: Tiny5 (SIL OFL 1.1)</string>
+    <string name="about_text">Monopod\n\nПиксельный шрифт: Tiny5 (SIL OFL 1.1)</string>
 
     <string name="all_songs">Все песни</string>
     <string name="unknown_artist">Неизвестный артист</string>
@@ -70,7 +70,7 @@
     <string name="effect_off">Выкл</string>
     <string name="effect_lcd">Цветной LCD</string>
     <string name="effect_crt">ЭЛТ</string>
-    <string name="effect_mono">Монохром</string>
+    <string name="effect_mono">iPod 1G</string>
     <string name="font_classic">Классика</string>
     <string name="font_pixel">Пиксельный</string>
     <string name="font_mono">Моно</string>
@@ -210,4 +210,17 @@
     <string name="spotify_setup_bad_id">Client ID — 32 символа: цифры и буквы a–f</string>
     <string name="spotify_setup_copy">Копировать</string>
     <string name="spotify_setup_copied">Скопировано</string>
+    <string name="effect_gameboy">Зелёный LCD</string>
+    <string name="backlight_timer">Таймер подсветки</string>
+    <string name="always_on">Всегда вкл.</string>
+    <string name="about_songs">Песни</string>
+    <string name="about_albums">Альбомы</string>
+    <string name="about_artists">Артисты</string>
+    <string name="about_time">Музыка</string>
+    <string name="hours_minutes">%1$d ч %2$d мин</string>
+    <string name="about_capacity">Ёмкость</string>
+    <string name="about_available">Доступно</string>
+    <string name="about_version">Версия</string>
+    <string name="about_credits">О Monopod</string>
+    <string name="online_lyrics">Тексты из LRCLIB</string>
 </resources>

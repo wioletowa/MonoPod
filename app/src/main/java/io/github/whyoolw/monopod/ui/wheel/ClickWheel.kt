@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -249,18 +248,13 @@ private fun BoxScope.MaterialWheelOverlay(w: MaterialWheel, centerPressed: Boole
         ringIcon(w.right, 1f, 0f)
         ringIcon(w.bottom, 0f, 1f)
         ringIcon(w.left, -1f, 0f)
-        // The center button: a plain accent circle that dips when pressed
+        // The center button: a plain accent circle, no icon on it, that dips when pressed
         val scale by animateFloatAsState(if (centerPressed) 0.9f else 1f, tween(120), label = "press")
         Box(
             Modifier.align(Alignment.Center).size(r * 2 * CENTER_RATIO * 0.94f)
                 .graphicsLayer { scaleX = scale; scaleY = scale }
                 .background(w.fab, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Crossfade(w.center, animationSpec = tween(250), label = "fabIcon") { icon ->
-                Icon(icon, null, Modifier.size(r * 0.3f), tint = w.onFab)
-            }
-        }
+        )
     }
 }
 

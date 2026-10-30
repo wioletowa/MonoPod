@@ -1,6 +1,7 @@
 package io.github.whyoolw.monopod.ui.nowplaying
 
 import io.github.whyoolw.monopod.playback.Playback
+import io.github.whyoolw.monopod.playback.SongInfo
 import io.github.whyoolw.monopod.spotify.Spotify
 import io.github.whyoolw.monopod.ui.menu.coverPath
 
@@ -19,6 +20,8 @@ interface NowSource {
     val queueSize: Int
     /** Ratings and lyrics belong to songs of our own player. */
     val local: Boolean
+    /** Name, artist and length of exactly the song at [uri], for finding its lyrics online. */
+    val info: SongInfo?
     fun seekBy(deltaMs: Long)
 }
 
@@ -35,6 +38,7 @@ class LocalSource(private val playback: Playback, private val coverFor: (String)
     override val queuePosition get() = playback.queuePosition
     override val queueSize get() = playback.queueSize
     override val local get() = true
+    override val info get() = playback.songInfo
     override fun seekBy(deltaMs: Long) = playback.seekBy(deltaMs)
 }
 
@@ -50,5 +54,6 @@ class SpotifySource(private val spotify: Spotify) : NowSource {
     override val queuePosition get() = 0
     override val queueSize get() = 0
     override val local get() = false
+    override val info get() = SongInfo(spotify.artist, spotify.title, spotify.album, spotify.durationMs)
     override fun seekBy(deltaMs: Long) = spotify.seekBy(deltaMs)
 }

@@ -61,6 +61,7 @@ class QueueStore(context: Context) {
         mediaMetadata.artist?.let { put("artist", it.toString()) }
         mediaMetadata.albumTitle?.let { put("album", it.toString()) }
         mediaMetadata.artworkUri?.let { put("art", it.toString()) }
+        mediaMetadata.durationMs?.let { put("duration", it) }
     }
 
     private fun JSONObject.toMediaItem(): MediaItem = mediaItem(
@@ -69,6 +70,7 @@ class QueueStore(context: Context) {
         artist = optString("artist").ifEmpty { null },
         album = optString("album").ifEmpty { null },
         artworkUri = optString("art").ifEmpty { null }?.let(Uri::parse),
+        durationMs = optLong("duration").takeIf { it > 0 },
     )
 
     private companion object {
@@ -83,11 +85,11 @@ class QueueStore(context: Context) {
 /** The media id is the file URI, so the service can always rebuild a playable item from it. */
 /** A Yandex Music song for the queue; [wave] marks My Wave songs, after which more are fetched. */
 fun io.github.whyoolw.monopod.yandex.YandexTrack.toMediaItem(wave: Boolean = false): MediaItem =
-    mediaItem(if (wave) "$uri?wave" else uri, title, artist, album, cover?.let(Uri::parse))
+    mediaItem(if (wave) "$uri?wave" else uri, title, artist, album, cover?.let(Uri::parse), durationMs)
 
 fun io.github.whyoolw.monopod.yandex.YandexTrack.toWaveItem(): MediaItem = toMediaItem(wave = true)
 
-fun mediaItem(uri: String, title: String?, artist: String?, album: String?, artworkUri: Uri?): MediaItem =
+fun mediaItem(uri: String, title: String?, artist: String?, album: String?, artworkUri: Uri?, durationMs: Long? = null): MediaItem =
     MediaItem.Builder()
         .setMediaId(uri)
         .setUri(uri)
@@ -97,6 +99,8 @@ fun mediaItem(uri: String, title: String?, artist: String?, album: String?, artw
                 .setArtist(artist)
                 .setAlbumTitle(album)
                 .setArtworkUri(artworkUri)
+                // The song's own length, for finding its lyrics before the player knows it
+                .setDurationMs(durationMs?.takeIf { it > 0 })
                 .setIsPlayable(true)
                 .setIsBrowsable(false)
                 .build(),

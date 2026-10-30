@@ -3,6 +3,7 @@ package io.github.whyoolw.monopod
 import android.app.Application
 import io.github.whyoolw.monopod.data.LibraryRepository
 import io.github.whyoolw.monopod.data.StatsRepository
+import io.github.whyoolw.monopod.playback.SleepTimer
 import io.github.whyoolw.monopod.spotify.Spotify
 import io.github.whyoolw.monopod.yandex.YandexMusic
 import io.github.whyoolw.monopod.ui.menu.CoverCache
@@ -17,6 +18,7 @@ class Monopod : Application() {
     /** App-wide too: the App Remote connection should survive a rotation. */
     val spotify by lazy { Spotify(this) }
     val yandex by lazy { YandexMusic(this) }
+    private lateinit var sleepTimer: SleepTimer
 
     override fun onCreate() {
         super.onCreate()
@@ -32,6 +34,7 @@ class Monopod : Application() {
         io.github.whyoolw.monopod.ui.theme.CustomBodies.init(this)
         // Start reading play counts now, so smart playlists have them by the time anyone looks
         stats
+        sleepTimer = SleepTimer(this)
     }
 
     companion object {

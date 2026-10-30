@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.content.edit
+import io.github.whyoolw.monopod.Prefs
 import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
@@ -63,8 +65,14 @@ class Spotify(private val context: Context) {
         hasClientId = auth.hasClientId
     }
     /** Set while Spotify, not the local library, is what plays: the wheel buttons go to it. */
-    var active by mutableStateOf(false)
-        private set
+    private var _active by mutableStateOf(false)
+    var active: Boolean
+        get() = _active
+        private set(v) {
+            if (v == _active) return
+            _active = v
+            context.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit { putBoolean(Prefs.SPOTIFY_ACTIVE, v) }
+        }
     var connected by mutableStateOf(false)
         private set
     /** Why the last connection failed, shown on the Now Playing screen. */
@@ -284,6 +292,8 @@ class Spotify(private val context: Context) {
 
     private fun mirror(state: PlayerState) {
         val track = state.track
+        // Where the last song was before this report: near its end means it finished by itself
+        val endedNaturally = durationMs > 0 && positionMs >= durationMs - SONG_END_MS
         isPlaying = !state.isPaused
         if (SystemClock.uptimeMillis() >= seekingUntil) {
             positionAt = state.playbackPosition
@@ -298,6 +308,12 @@ class Spotify(private val context: Context) {
         artist = track.artist?.name.orEmpty()
         album = track.album?.name.orEmpty()
         if (trackUri != track.uri) {
+            // The sleep timer was set to the end of the song: the next one does not get to play
+            // (a skip or a newly picked playlist is not the end of the song)
+            if (trackUri != null && active && endedNaturally && sleepAtEndOfSong()) {
+                context.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).edit { remove(Prefs.SLEEP_UNTIL) }
+                remote?.playerApi?.pause()
+            }
             liked = null
             val uri = track.uri
             remote?.userApi?.getLibraryState(uri)?.setResultCallback { if (trackUri == uri) liked = it.isAdded }
@@ -325,6 +341,9 @@ class Spotify(private val context: Context) {
         if (key == coverUri) coverPath = file.path
     }
 
+    private fun sleepAtEndOfSong() =
+        context.getSharedPreferences(Prefs.FILE, Context.MODE_PRIVATE).getLong(Prefs.SLEEP_UNTIL, 0L) == Prefs.SLEEP_END_OF_SONG
+
     private fun stopMirroring() {
         remote?.let(SpotifyAppRemote::disconnect)
         remote = null
@@ -333,6 +352,8 @@ class Spotify(private val context: Context) {
     }
 
     companion object {
+        /** A song change this close to the end of the last song is the song ending, not a skip. */
+        private const val SONG_END_MS = 4_000L
         const val ERROR_NOT_INSTALLED = "not-installed"
         /** How long after a seek click Spotify's position reports are not trusted. */
         private const val SEEK_SETTLE_MS = 700L

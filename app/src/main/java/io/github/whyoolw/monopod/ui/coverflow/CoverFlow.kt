@@ -226,8 +226,10 @@ fun CoverFlowView(
             tilt = PLAYING_TILT,
             onCoverPlaced = { target = it },
         )
-        // Landed, it shows the playing song's own cover: a playlist's songs come from many albums
-        CoverWall(page, fly, target?.translate(-origin), playingCover = if (fly >= 1f) source.cover else null)
+        // Landed, it shows the playing song's own cover: a playlist's songs come from many albums.
+        // The lyrics take the whole screen, the cover included
+        val lyricsUp = page.modes.mode == NowPlayingPage.Mode.Lyrics && page.modes.lyrics != null
+        if (!(fly >= 1f && lyricsUp)) CoverWall(page, fly, target?.translate(-origin), playingCover = if (fly >= 1f) source.cover else null)
     }
 }
 
@@ -412,19 +414,29 @@ private fun TrackList(page: CoverFlowPage, size: Dp) {
             style = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 11.sp, color = Lcd.dimText),
         )
         val end = minOf(page.trackFirst + rows, album.tracks.size)
+        // Material: the card is surfaceVariant, which the usual selection (secondaryContainer)
+        // nearly matches with system colors; a pill in the primary color stands out on any scheme
+        val material = Lcd.material
+        val onSelection = if (material) Lcd.background else Lcd.onSelection
         for (i in page.trackFirst until end) {
             val selected = i == page.track
             Row(
                 Modifier.fillMaxWidth().height(rowHeight)
-                    .then(if (selected) Modifier.background(Brush.verticalGradient(listOf(Lcd.selectionTop, Lcd.selectionBottom))) else Modifier)
-                    .padding(horizontal = 6.dp),
+                    .then(
+                        when {
+                            !selected -> Modifier
+                            material -> Modifier.padding(horizontal = 3.dp).background(Lcd.accent, RoundedCornerShape(50))
+                            else -> Modifier.background(Brush.verticalGradient(listOf(Lcd.selectionTop, Lcd.selectionBottom)))
+                        },
+                    )
+                    .padding(horizontal = if (selected && material) 3.dp else 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                val color = if (selected) Lcd.onSelection else Lcd.text
+                val color = if (selected) onSelection else Lcd.text
                 BasicText(
                     "${album.tracks[i].trackNo ?: i + 1}",
                     Modifier.width(18.dp),
-                    style = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 10.sp, color = if (selected) Lcd.onSelection else Lcd.dimText),
+                    style = TextStyle(fontFamily = LocalLcdFont.current, fontSize = 10.sp, color = if (selected) onSelection else Lcd.dimText),
                 )
                 BasicText(
                     album.tracks[i].title,

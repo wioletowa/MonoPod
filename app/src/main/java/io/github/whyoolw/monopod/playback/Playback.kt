@@ -33,6 +33,12 @@ class Playback(private val context: Context) : Player.Listener {
         private set
     var metadata by mutableStateOf(MediaMetadata.EMPTY)
         private set
+    /**
+     * What we know of the current song from its queue entry. Unlike [metadata], which the
+     * controller may update a moment after the song changes, this always belongs to [mediaUri].
+     */
+    var songInfo by mutableStateOf<SongInfo?>(null)
+        private set
     /** URI of the current song (its media id). */
     var mediaUri by mutableStateOf<String?>(null)
         private set
@@ -146,6 +152,9 @@ class Playback(private val context: Context) : Player.Listener {
         hasQueue = p.mediaItemCount > 0
         metadata = p.mediaMetadata
         mediaUri = p.currentMediaItem?.mediaId
+        songInfo = p.currentMediaItem?.mediaMetadata?.let {
+            SongInfo(it.artist?.toString(), it.title?.toString(), it.albumTitle?.toString(), it.durationMs ?: 0L)
+        }
         durationMs = p.duration.takeIf { it > 0 } ?: 0L
         localShuffle = p.shuffleModeEnabled
         localRepeat = p.repeatMode
@@ -193,4 +202,5 @@ fun Track.toMediaItem(library: LibrarySnapshot): MediaItem = mediaItem(
     artist = artist,
     album = album,
     artworkUri = library.coverPath(albumKey)?.let { Uri.fromFile(File(it)) },
+    durationMs = durationMs,
 )

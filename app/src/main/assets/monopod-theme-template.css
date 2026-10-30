@@ -117,7 +117,7 @@ monopod-theme {
     /* Layout / Раскладка: classic | big */
     layout: classic;
 
-    /* Screen effect / Эффект экрана: off | lcd | crt | mono */
+    /* Screen effect / Эффект экрана: off | lcd | crt | mono (iPod 1G) | gameboy (green LCD / зелёный LCD) */
     effect: lcd;
 
     /* Effect strength / Сила эффекта: 0% … 100% */
